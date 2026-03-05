@@ -341,7 +341,6 @@ function TestimonialCarousel({ accentGrad }) {
 // ═══════════════════════════════════════
 export default function QR8Page() {
   const [loaded, setLoaded] = useState(false);
-  const [hovStat, setHovStat] = useState(null);
   const [ctaHov, setCtaHov] = useState(false);
   const [navBtnHov, setNavBtnHov] = useState(false);
   const [navHov, setNavHov] = useState(null);
@@ -363,12 +362,6 @@ export default function QR8Page() {
     { label: "Pricing", href: "#pricing" },
     { label: "Portfolio", href: "#portfolio" },
     { label: "Testimonials", href: "#testimonials" },
-    // { label: "About", href: "#about" },
-  ];
-  const stats = [
-    { n: 150, s: "+", l: "Projects Shipped" },
-    { n: 40, s: "+", l: "Happy Teams" },
-    { n: 4.9, s: "★", l: "Avg. Rating", decimal: true },
   ];
   const accentGrad = "linear-gradient(135deg, #8b5cf6, #22d3ee)";
 
@@ -569,31 +562,6 @@ export default function QR8Page() {
             desc="Clean code, fast load times, and optimized experiences. Your users won't wait — and they won't have to."
           />
         </div>
-
-        {/* Stats — hidden until we have real clientele
-        <div style={{
-          display: "flex", justifyContent: "center", gap: 64, flexWrap: "wrap",
-          opacity: loaded ? 1 : 0, transition: "opacity 0.8s ease 2.2s",
-        }}>
-          {stats.map((s, i) => (
-            <div key={i} style={{
-              textAlign: "center", cursor: "default", transition: "transform 0.3s",
-              transform: hovStat === i ? "translateY(-4px)" : "translateY(0)", minWidth: 100,
-            }} onMouseEnter={() => setHovStat(i)} onMouseLeave={() => setHovStat(null)}>
-              <div style={{
-                fontSize: 44, fontWeight: 700, letterSpacing: "-0.04em", lineHeight: 1,
-                transition: "all 0.3s",
-                ...(hovStat === i ? {
-                  background: accentGrad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                } : { color: "#f4f4f5" }),
-              }}>
-                {s.decimal ? <span>{s.n}{s.s}</span> : <Counter to={s.n} suffix={s.s} />}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 500, marginTop: 8, color: "rgba(244,244,245,0.4)" }}>{s.l}</div>
-            </div>
-          ))}
-        </div>
-        */}
 
       </section>
 
@@ -1257,98 +1225,6 @@ export default function QR8Page() {
         </FadeIn>
       </section>
 
-      {/* ABOUT section hidden — re-enable when ready
-      <section id="about" style={{ scrollMarginTop: 80,
-        position: "relative", zIndex: 10,
-        maxWidth: 1200, margin: "0 auto",
-        padding: "100px 40px 80px",
-      }}>
-        <FadeIn>
-          <div style={{
-            maxWidth: 740, margin: "0 auto",
-            textAlign: "center",
-          }}>
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "6px 16px", marginBottom: 20,
-              background: "rgba(255,255,255,0.04)",
-              border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 980, fontSize: 12, fontWeight: 600,
-              color: "rgba(244,244,245,0.5)", letterSpacing: "0.05em",
-              textTransform: "uppercase",
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="url(#igab)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <defs><linearGradient id="igab" x1="0" y1="0" x2="24" y2="24"><stop stopColor="#a78bfa"/><stop offset="1" stopColor="#67e8f9"/></linearGradient></defs>
-                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
-              </svg>
-              About Us
-            </div>
-            <h2 style={{
-              fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 700,
-              letterSpacing: "-0.03em", color: "#f4f4f5",
-              margin: "0 0 32px",
-            }}>We started QR8 because <span style={{ whiteSpace: "nowrap" }}>we were tired</span><br/>of the same old agency playbook.</h2>
-          </div>
-        </FadeIn>
-
-        <FadeIn delay={100}>
-          <div style={{
-            maxWidth: 800, margin: "0 auto",
-            background: "rgba(255,255,255,0.03)",
-            backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
-            border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: 20, padding: "40px 44px",
-          }}>
-            <p style={{
-              fontSize: 16, lineHeight: 1.75, color: "rgba(244,244,245,0.55)",
-              margin: "0 0 24px",
-            }}>
-              Most agencies sell you a template, slap your logo on it, and call it "custom." We thought that was kind of garbage. So we built something different.
-            </p>
-            <p style={{
-              fontSize: 16, lineHeight: 1.75, color: "rgba(244,244,245,0.55)",
-              margin: "0 0 24px",
-            }}>
-              QR8 is a small team of designers and engineers who actually care about the sites we ship. We use AI where it makes things genuinely better — smarter design exploration, faster iteration, real personalization — not as a gimmick to cut corners. Every pixel is intentional. Every line of code has a reason.
-            </p>
-            <p style={{
-              fontSize: 16, lineHeight: 1.75, color: "rgba(244,244,245,0.55)",
-              margin: "0 0 32px",
-            }}>
-              We're not trying to be the biggest agency. We're trying to be the one you actually enjoy working with — the team that picks up the phone, ships on time, and builds something you're proud to show people.
-            </p>
-
-            <div style={{
-              height: 1, marginBottom: 32,
-              background: "linear-gradient(90deg, rgba(139,92,246,0.2), rgba(34,211,238,0.15), transparent)",
-            }} />
-
-            <div style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              flexWrap: "wrap", gap: 24,
-            }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "#f4f4f5" }}>Small team, big standards.</div>
-                <div style={{ fontSize: 12, color: "rgba(244,244,245,0.35)", marginTop: 2 }}>Based in South Florida. Working with partners everywhere.</div>
-              </div>
-
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {["Ship fast", "Stay honest", "Sweat the details"].map((v, i) => (
-                  <span key={i} style={{
-                    padding: "6px 16px",
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    borderRadius: 980, fontSize: 12, fontWeight: 600,
-                    color: "rgba(244,244,245,0.45)",
-                  }}>{v}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </FadeIn>
-      </section>
-      */}
-
       {/* ═══════════════════════════════════════ */}
       {/* FOOTER (with CTA)                       */}
       {/* ═══════════════════════════════════════ */}
@@ -1700,7 +1576,6 @@ export default function QR8Page() {
           from { opacity: 0; transform: translateY(30px) scale(0.97); }
           to { opacity: 1; transform: translateY(0) scale(1); }
         }
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
       `}</style>
     </div>
   );
