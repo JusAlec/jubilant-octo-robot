@@ -1,0 +1,228 @@
+/* ═══════════════════════════════════════
+   Responsive Breakpoints
+   Mobile:  < 640px
+   Tablet:  640px - 1024px
+   Desktop: > 1024px
+   ═══════════════════════════════════════ */
+
+/* ── Tablet ── */
+@media (max-width: 1024px) {
+  :root {
+    --section-px: 28px;
+    --section-py: 80px;
+    --section-py-sm: 60px;
+    --hero-pt: 120px;
+    --hero-pb: 48px;
+    --nav-px: 24px;
+  }
+
+  /* Before/After mockup: stack vertically */
+  .before-after-display {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .before-after-display .browser-frame {
+    max-width: 100% !important;
+  }
+
+  .before-after-arrow {
+    transform: rotate(90deg);
+  }
+
+  /* Industry tabs: smaller */
+  .industry-tabs {
+    gap: 6px !important;
+  }
+
+  .industry-tabs button {
+    padding: 5px 12px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ── Mobile ── */
+@media (max-width: 640px) {
+  :root {
+    --section-px: 20px;
+    --section-py: 60px;
+    --section-py-sm: 48px;
+    --hero-pt: 100px;
+    --hero-pb: 40px;
+    --card-gap: 16px;
+    --card-gap-lg: 16px;
+    --nav-px: 16px;
+    --form-columns: 1;
+  }
+
+  /* ── Nav ── */
+  .nav-links {
+    display: none !important;
+  }
+
+  .nav-container {
+    padding: 12px var(--nav-px) !important;
+  }
+
+  .mobile-menu-btn {
+    display: flex !important;
+  }
+
+  /* Mobile nav overlay */
+  .mobile-nav-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 49;
+    background: var(--color-overlay);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: fadeIn 0.2s ease;
+  }
+
+  .mobile-nav-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 280px;
+    z-index: 50;
+    background: var(--modal-bg);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+    border-left: 1px solid var(--color-border);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .mobile-nav-panel a {
+    display: block;
+    padding: 14px 16px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    border-radius: 12px;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .mobile-nav-panel a:hover,
+  .mobile-nav-panel a:active {
+    background: var(--pill-bg);
+    color: var(--color-text-primary);
+  }
+
+  .mobile-nav-cta {
+    margin-top: 8px;
+    padding: 14px 0;
+    width: 100%;
+    background: var(--accent-gradient);
+    color: #fff;
+    border: none;
+    border-radius: var(--pill-radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ── Hero ── */
+  .hero-buttons {
+    flex-direction: column !important;
+    width: 100%;
+    align-items: stretch !important;
+  }
+
+  .hero-buttons button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Before/After: hide on small mobile, show single */
+  .before-after-display {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .before-after-arrow {
+    display: none !important;
+  }
+
+  /* ── Cards (Process, Pricing, Problem/Solution, Testimonials) ── */
+  .cards-row {
+    flex-direction: column !important;
+  }
+
+  /* ── Portfolio nav arrows ── */
+  .portfolio-nav-btn {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .portfolio-nav-prev {
+    left: -8px !important;
+  }
+
+  .portfolio-nav-next {
+    right: -8px !important;
+  }
+
+  /* ── Trust strip ── */
+  .trust-stats {
+    gap: 16px !important;
+  }
+
+  .trust-stats > div {
+    min-width: 80px !important;
+  }
+
+  .tech-logos {
+    display: none !important;
+  }
+
+  /* ── Modals ── */
+  .modal-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .modal-panel {
+    max-width: 100% !important;
+    border-radius: 20px 20px 0 0 !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+    padding: 28px 20px 24px !important;
+  }
+
+  .legal-modal-panel {
+    max-height: 92vh !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 28px 20px 24px !important;
+  }
+
+  /* ── Form rows ── */
+  .form-row {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  /* ── Footer ── */
+  .footer-bar {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 20px !important;
+  }
+
+  .footer-social-legal {
+    flex-wrap: wrap !important;
+    gap: 16px !important;
+  }
+}
+
+/* ── Slide-in animation for mobile nav ── */
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}

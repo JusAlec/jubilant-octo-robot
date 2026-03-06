@@ -1,0 +1,332 @@
+/* ═══════════════════════════════════════
+   QR8 Design Tokens -- Slate/Blue System
+   Light mode = :root (default)
+   Dark mode  = [data-theme="dark"]
+   ═══════════════════════════════════════ */
+
+:root {
+  /* ── Colors (Slate scale) ── */
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-hover: #F1F5F9;
+  --color-surface-glass: rgba(255, 255, 255, 0.92);
+  --color-surface-glass-hover: rgba(255, 255, 255, 0.96);
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #334155;
+  --color-text-muted: #475569;
+  --color-text-faint: #556275;
+
+  /* ── Accent (Blue-600 primary) ── */
+  --color-accent: #2563EB;
+  --color-accent-secondary: #06B6D4;
+  --color-accent-soft: rgba(37, 99, 235, 0.08);
+  --color-accent-border: rgba(37, 99, 235, 0.2);
+
+  --color-border: rgba(15, 23, 42, 0.08);
+  --color-border-hover: rgba(15, 23, 42, 0.15);
+
+  --color-overlay: rgba(15, 23, 42, 0.6);
+
+  /* ── Accent gradient (reserved for primary CTAs + brand) ── */
+  --accent-gradient: linear-gradient(135deg, #2563EB, #06B6D4);
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-glow-strong: rgba(37, 99, 235, 0.25);
+
+  /* ── Shadows ── */
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.03);
+  --shadow-card-hover: 0 4px 16px rgba(15, 23, 42, 0.08);
+  --shadow-accent: 0 4px 14px rgba(37, 99, 235, 0.18);
+  --shadow-accent-hover: 0 8px 28px rgba(37, 99, 235, 0.28);
+
+  /* ── Glass ── */
+  --glass-blur: blur(12px);
+
+  /* ── Nav ── */
+  --nav-bg: rgba(248, 250, 252, 0.82);
+  --nav-border: rgba(15, 23, 42, 0.06);
+  --nav-btn-bg: rgba(15, 23, 42, 0.04);
+  --nav-btn-bg-hover: rgba(15, 23, 42, 0.08);
+  --nav-btn-border: rgba(15, 23, 42, 0.1);
+
+  /* ── Inputs ── */
+  --input-bg: rgba(15, 23, 42, 0.03);
+  --input-border: rgba(15, 23, 42, 0.1);
+  --input-focus-border: rgba(37, 99, 235, 0.4);
+  --input-placeholder: rgba(15, 23, 42, 0.3);
+
+  /* ── Modal ── */
+  --modal-bg: #FFFFFF;
+  --modal-border: rgba(15, 23, 42, 0.08);
+
+  /* ── Carousel fade ── */
+  --carousel-fade-from: #F8FAFC;
+
+  /* ── Check mark color ── */
+  --check-color: rgba(15, 23, 42, 0.35);
+
+  /* ── Pill / tag backgrounds ── */
+  --pill-bg: rgba(15, 23, 42, 0.04);
+  --pill-border: rgba(15, 23, 42, 0.08);
+
+  /* ── Divider ── */
+  --divider: rgba(15, 23, 42, 0.06);
+
+  /* ── Aurora mesh (simplified for light -- clean gradient, no animated blobs) ── */
+  --aurora-base: linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 50%, #F8FAFC 100%);
+  --aurora-blob-1: transparent;
+  --aurora-blob-2: transparent;
+  --aurora-blob-3: transparent;
+  --aurora-blob-4: transparent;
+  --aurora-noise-opacity: 0;
+  --aurora-grid-opacity: 0;
+  --aurora-grid-color: rgba(15, 23, 42, 0.08);
+
+  /* ── Typography ── */
+  --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --line-height-body: 1.65;
+  --line-height-heading: 1.1;
+
+  /* ── Spacing ── */
+  --container-max-width: 1200px;
+  --card-radius: 16px;
+  --card-radius-lg: 20px;
+  --pill-radius: 980px;
+
+  /* ── Responsive tokens ── */
+  --section-px: 40px;
+  --section-py: 100px;
+  --section-py-sm: 80px;
+  --hero-pt: 140px;
+  --hero-pb: 60px;
+  --card-gap: 20px;
+  --card-gap-lg: 24px;
+  --nav-px: 40px;
+  --form-columns: 2;
+
+  /* ── Transitions ── */
+  --theme-transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ═══════════════════════════════════════
+   Dark mode overrides
+   ═══════════════════════════════════════ */
+[data-theme="dark"] {
+  --color-bg: #0F172A;
+  --color-surface: #1E293B;
+  --color-surface-hover: #334155;
+  --color-surface-glass: rgba(30, 41, 59, 0.65);
+  --color-surface-glass-hover: rgba(30, 41, 59, 0.75);
+
+  --color-text-primary: #F1F5F9;
+  --color-text-secondary: #CBD5E1;
+  --color-text-muted: #94A3B8;
+  --color-text-faint: #97A8BC;
+
+  --color-accent: #60A5FA;
+  --color-accent-secondary: #22D3EE;
+  --color-accent-soft: rgba(96, 165, 250, 0.12);
+  --color-accent-border: rgba(96, 165, 250, 0.25);
+
+  --color-border: rgba(241, 245, 249, 0.08);
+  --color-border-hover: rgba(241, 245, 249, 0.14);
+
+  --color-overlay: rgba(0, 0, 0, 0.7);
+
+  --accent-gradient: linear-gradient(135deg, #60A5FA, #22D3EE);
+  --accent-glow: rgba(96, 165, 250, 0.2);
+  --accent-glow-strong: rgba(96, 165, 250, 0.35);
+
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --shadow-accent: 0 4px 20px rgba(96, 165, 250, 0.2);
+  --shadow-accent-hover: 0 8px 36px rgba(96, 165, 250, 0.35);
+
+  --glass-blur: blur(20px);
+
+  --nav-bg: rgba(15, 23, 42, 0.75);
+  --nav-border: rgba(241, 245, 249, 0.06);
+  --nav-btn-bg: rgba(241, 245, 249, 0.07);
+  --nav-btn-bg-hover: rgba(241, 245, 249, 0.12);
+  --nav-btn-border: rgba(241, 245, 249, 0.1);
+
+  --input-bg: rgba(241, 245, 249, 0.04);
+  --input-border: rgba(241, 245, 249, 0.08);
+  --input-focus-border: rgba(96, 165, 250, 0.4);
+  --input-placeholder: rgba(241, 245, 249, 0.2);
+
+  --modal-bg: #1E293B;
+  --modal-border: rgba(241, 245, 249, 0.08);
+
+  --carousel-fade-from: #0F172A;
+
+  --check-color: rgba(241, 245, 249, 0.3);
+
+  --pill-bg: rgba(241, 245, 249, 0.04);
+  --pill-border: rgba(241, 245, 249, 0.06);
+
+  --divider: rgba(241, 245, 249, 0.06);
+
+  /* Aurora mesh (dark mode -- 2 animated blobs, reduced from 4) */
+  --aurora-base: radial-gradient(ellipse at 20% 50%, #0c1425 0%, #0F172A 100%);
+  --aurora-blob-1: rgba(96, 165, 250, 0.14);
+  --aurora-blob-2: rgba(34, 211, 238, 0.10);
+  --aurora-blob-3: transparent;
+  --aurora-blob-4: transparent;
+  --aurora-noise-opacity: 0.02;
+  --aurora-grid-opacity: 0.03;
+  --aurora-grid-color: rgba(241, 245, 249, 0.6);
+}
+
+/* ═══════════════════════════════════════
+   Global resets & base styles
+   ═══════════════════════════════════════ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+body {
+  background: var(--color-bg);
+  transition: background 0.3s ease;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--input-placeholder);
+}
+
+select option {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+/* ═══════════════════════════════════════
+   Card hover micro-interactions
+   ═══════════════════════════════════════ */
+.cards-row > div {
+  transition: transform 0.25s ease, box-shadow 0.25s ease,
+              border-color 0.3s ease, background 0.3s ease;
+}
+
+.cards-row > div:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Smooth theme transitions on themed elements */
+nav, footer, section {
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ═══════════════════════════════════════
+   Reduced motion preference
+   ═══════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ═══════════════════════════════════════
+   Keyframe animations
+   ═══════════════════════════════════════ */
+/* ═══════════════════════════════════════
+   Accessibility: Skip link & focus indicators
+   ═══════════════════════════════════════ */
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  z-index: 999;
+  padding: 12px 24px;
+  background: var(--color-accent);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--pill-radius);
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+
+.skip-to-content:focus {
+  top: 16px;
+  outline: none;
+}
+
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════
+   Keyframe animations
+   ═══════════════════════════════════════ */
+/* ═══════════════════════════════════════
+   Modal form inputs (focus via CSS, not JS)
+   ═══════════════════════════════════════ */
+.modal-input:focus {
+  border-color: var(--input-focus-border) !important;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes drift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(60px, -40px) scale(1.05); }
+  66% { transform: translate(-30px, 30px) scale(0.95); }
+}
+
+@keyframes drift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-50px, 50px) scale(1.08); }
+  66% { transform: translate(40px, -20px) scale(0.96); }
+}
+
+@keyframes drift3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, -50px) scale(1.06); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
