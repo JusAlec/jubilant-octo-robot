@@ -1,10 +1,10 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
+import { normalizeGitHub } from './github.js';
 import { agents, departments } from '../src/data/office.js';
 
-export class AppError extends Error {
-  constructor(status, message) { super(message); this.status = status; }
-}
+import { AppError } from './errors.js';
+export { AppError } from './errors.js';
 export const statuses = ['Queued', 'In progress', 'In review', 'Blocked', 'Complete'];
 function text(value, name, max, required = true) {
   if (typeof value !== 'string' || (required && !value.trim()) || value.length > max) throw new AppError(400, `${name} must be ${required ? 'nonempty text' : 'text'} up to ${max} characters.`);
@@ -26,6 +26,18 @@ export function createStore(filename) {
     CREATE UNIQUE INDEX IF NOT EXISTS one_active_task_per_agent ON tasks(project_id,agent_id) WHERE agent_id IS NOT NULL AND status IN ('In progress','In review','Blocked');
   `);
   db.prepare('INSERT OR IGNORE INTO schema_migrations VALUES(1, ?)').run(new Date().toISOString());
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS github_bindings (id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),repository_id INTEGER NOT NULL UNIQUE,full_name TEXT NOT NULL,installation_id INTEGER,created_at TEXT NOT NULL,last_received_at TEXT);
+    CREATE TABLE IF NOT EXISTS github_deliveries (delivery_id TEXT PRIMARY KEY,digest TEXT NOT NULL,binding_id TEXT NOT NULL REFERENCES github_bindings(id),event_type TEXT NOT NULL,received_at TEXT NOT NULL,outcome TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS github_evidence (id TEXT PRIMARY KEY,project_id TEXT NOT NULL REFERENCES projects(id),binding_id TEXT NOT NULL REFERENCES github_bindings(id),kind TEXT NOT NULL,external_id TEXT NOT NULL,title TEXT NOT NULL,status TEXT NOT NULL,url TEXT NOT NULL,sha TEXT NOT NULL,pr_number INTEGER,task_id TEXT,version INTEGER NOT NULL DEFAULT 1,updated_at TEXT NOT NULL,FOREIGN KEY(task_id) REFERENCES tasks(id),UNIQUE(binding_id,kind,external_id));
+    CREATE INDEX IF NOT EXISTS github_evidence_project ON github_evidence(project_id,updated_at);
+  `);
+  db.prepare('INSERT OR IGNORE INTO schema_migrations VALUES(2, ?)').run(new Date().toISOString());
+  if(!db.prepare('PRAGMA table_info(github_evidence)').all().some(c=>c.name==='occurred_at'))db.exec('ALTER TABLE github_evidence ADD COLUMN occurred_at TEXT');
+  db.prepare('INSERT OR IGNORE INTO schema_migrations VALUES(3, ?)').run(new Date().toISOString());
+  if(!db.prepare('PRAGMA table_info(github_bindings)').all().some(c=>c.name==='version'))db.exec('ALTER TABLE github_bindings ADD COLUMN version INTEGER NOT NULL DEFAULT 1');
+  db.prepare('INSERT OR IGNORE INTO schema_migrations VALUES(4, ?)').run(new Date().toISOString());
+
   function transaction(fn) {
     db.exec('BEGIN IMMEDIATE');
     try { const result = fn(); db.exec('COMMIT'); return result; } catch (error) { db.exec('ROLLBACK'); throw error; }
@@ -64,7 +76,72 @@ export function createStore(filename) {
     snapshot(projectId) {
       const p = project(projectId);
       const assigned = new Set(db.prepare('SELECT agent_id FROM project_agents WHERE project_id=?').all(projectId).map(r=>r.agent_id));
-      return { project: p, agents: agents.filter(a=>assigned.has(a.id)), departments, tasks: db.prepare('SELECT * FROM tasks WHERE project_id=? ORDER BY created_at,id').all(projectId), events: db.prepare('SELECT * FROM events WHERE project_id=? ORDER BY sequence DESC LIMIT 500').all(projectId).reverse(), artifacts: db.prepare('SELECT * FROM artifacts WHERE project_id=? ORDER BY created_at DESC,id').all(projectId), tickets: db.prepare('SELECT * FROM tickets WHERE project_id=? ORDER BY created_at DESC,id').all(projectId) };
+      return { project: p, agents: agents.filter(a=>assigned.has(a.id)), departments, tasks: db.prepare('SELECT * FROM tasks WHERE project_id=? ORDER BY created_at,id').all(projectId), events: db.prepare('SELECT * FROM events WHERE project_id=? ORDER BY sequence DESC LIMIT 500').all(projectId).reverse(), artifacts: db.prepare('SELECT * FROM artifacts WHERE project_id=? ORDER BY created_at DESC,id').all(projectId), tickets: db.prepare('SELECT * FROM tickets WHERE project_id=? ORDER BY created_at DESC,id').all(projectId), github: { bindings: db.prepare('SELECT * FROM github_bindings WHERE project_id=?').all(projectId), evidence: db.prepare('SELECT * FROM github_evidence WHERE project_id=? ORDER BY updated_at DESC,id').all(projectId) } };
+    },
+    bindGitHub(projectId,input) {
+      project(projectId);
+      if(!Number.isSafeInteger(input.repository_id)||input.repository_id<=0)throw new AppError(400,'A positive GitHub repository ID is required.');
+      const name=text(input.full_name,'Repository name',200);
+      if(!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(name))throw new AppError(400,'Use owner/repository without a URL.');
+      const installation=input.installation_id??null;
+      if(installation!==null&&(!Number.isSafeInteger(installation)||installation<=0))throw new AppError(400,'Installation ID must be a positive integer.');
+      return transaction(()=>{
+        if(db.prepare('SELECT 1 FROM github_bindings WHERE repository_id=?').get(input.repository_id))throw new AppError(409,'This repository already has a project binding.');
+        const id=randomUUID();
+        db.prepare('INSERT INTO github_bindings(id,project_id,repository_id,full_name,installation_id,created_at) VALUES(?,?,?,?,?,?)').run(id,projectId,input.repository_id,name,installation,new Date().toISOString());
+        event(projectId,'github.bound',`Repository mapped: ${name}`,'Local configuration only. GitHub delivery is not connected until a signed event is received.');
+        return {id};
+      });
+    },
+    updateGitHubBinding(projectId,id,input){
+      return transaction(()=>{
+        project(projectId);
+        const binding=db.prepare('SELECT * FROM github_bindings WHERE id=? AND project_id=?').get(id,projectId);
+        if(!binding)throw new AppError(404,'Repository binding not found in this project.');
+        if(input.version!==binding.version)throw new AppError(409,'Repository mapping changed. Refresh before editing.');
+        const name=text(input.full_name,'Repository name',200);
+        if(!/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(name))throw new AppError(400,'Use owner/repository without a URL.');
+        const installation=input.installation_id??null;
+        if(installation!==null&&(!Number.isSafeInteger(installation)||installation<=0))throw new AppError(400,'Installation ID must be a positive integer.');
+        db.prepare('UPDATE github_bindings SET full_name=?,installation_id=?,last_received_at=NULL,version=version+1 WHERE id=?').run(name,installation,id);
+        event(projectId,'github.mapping_updated',`Repository mapping updated: ${name}`,'Awaiting a signed delivery for the updated identity. Existing evidence is historical.');
+        return {id};
+      });
+    },
+    ingestGitHub({delivery,type,payload,digest}) {
+      if(!Number.isSafeInteger(payload.repository?.id)||typeof payload.repository?.full_name!=='string')throw new AppError(400,'Missing repository identity.');
+      return transaction(()=>{
+        const binding=db.prepare('SELECT * FROM github_bindings WHERE repository_id=?').get(payload.repository.id);
+        if(!binding||binding.full_name.toLowerCase()!==payload.repository.full_name.toLowerCase())throw new AppError(403,'Repository is not mapped to this workspace.');
+        if((payload.installation?.id??null)!==binding.installation_id)throw new AppError(403,'GitHub installation does not match this binding.');
+        const prior=db.prepare('SELECT * FROM github_deliveries WHERE delivery_id=?').get(delivery);
+        if(prior){if(prior.digest!==digest||prior.binding_id!==binding.id||prior.event_type!==type)throw new AppError(409,'Delivery ID was reused with different content.');return {duplicate:true,outcome:prior.outcome};}
+        const item=normalizeGitHub(type,payload,binding.full_name),now=new Date().toISOString();
+        db.prepare('INSERT INTO github_deliveries VALUES(?,?,?,?,?,?)').run(delivery,digest,binding.id,type,now,item?'recorded':'ignored');
+        db.prepare('UPDATE github_bindings SET last_received_at=? WHERE id=?').run(now,binding.id);
+        if(!item)return {duplicate:false,outcome:'ignored'};
+        const old=db.prepare('SELECT * FROM github_evidence WHERE binding_id=? AND kind=? AND external_id=?').get(binding.id,item.kind,item.externalId);
+        if(old?.occurred_at&&(!item.occurredAt||item.occurredAt<old.occurred_at)){
+          db.prepare("UPDATE github_deliveries SET outcome='stale' WHERE delivery_id=?").run(delivery);
+          return {duplicate:false,outcome:'stale',evidence_id:old.id};
+        }
+        const id=old?.id||randomUUID();
+        db.prepare(`INSERT INTO github_evidence(id,project_id,binding_id,kind,external_id,title,status,url,sha,pr_number,updated_at,occurred_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?) ON CONFLICT(binding_id,kind,external_id) DO UPDATE SET title=excluded.title,status=excluded.status,url=excluded.url,sha=excluded.sha,pr_number=excluded.pr_number,updated_at=excluded.updated_at,occurred_at=excluded.occurred_at,version=github_evidence.version+1`).run(id,binding.project_id,binding.id,item.kind,item.externalId,item.title,item.status,item.url,item.sha,item.number,now,item.occurredAt);
+        db.prepare('INSERT INTO events(id,project_id,task_id,type,summary,detail,created_at,source) VALUES(?,?,?,?,?,?,?,?)').run(randomUUID(),binding.project_id,old?.task_id||null,`github.${type}`,item.summary,item.detail,now,'github');
+        return {duplicate:false,outcome:'recorded',evidence_id:id};
+      });
+    },
+    linkEvidence(projectId,id,input){
+      return transaction(()=>{
+        project(projectId);
+        const row=db.prepare('SELECT * FROM github_evidence WHERE id=? AND project_id=?').get(id,projectId);
+        if(!row)throw new AppError(404,'Evidence not found in this project.');
+        if(input.version!==row.version)throw new AppError(409,'This evidence changed. Refresh before linking it.');
+        const taskId=input.task_id||null;if(taskId)task(projectId,taskId);
+        db.prepare('UPDATE github_evidence SET task_id=?,version=version+1 WHERE id=?').run(taskId,id);
+        event(projectId,'github.linked',`Evidence ${taskId?'linked to task':'unlinked'}: ${row.title}`,'Linked by the local operator. Task completion is not automatically inferred from a successful check.',taskId);
+        return {id};
+      });
     },
     createTask(projectId, input) {
       project(projectId);

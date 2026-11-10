@@ -176,9 +176,41 @@
       "detail": "Operator-authored note; not an automatically generated build artifact.",
       "created_at": "2026-11-10T00:42:44.242Z",
       "source": "operator"
+    },
+    {
+      "sequence": 6,
+      "id": "4ddcd873-f994-4eff-9cb5-89565ab88f01",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "task_id": null,
+      "agent_id": null,
+      "type": "github.bound",
+      "summary": "Repository mapped: JusAlec/jubilant-octo-robot",
+      "detail": "Local configuration only. GitHub delivery is not connected until a signed event is received.",
+      "created_at": "2026-11-10T01:26:14.802Z",
+      "source": "operator"
+    },
+    {
+      "sequence": 7,
+      "id": "b5433d09-b3df-45c2-9cd4-5620fe9c2bc5",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "task_id": null,
+      "agent_id": null,
+      "type": "artifact.created",
+      "summary": "Project note added: GitHub integration — receiver ready, live setup pending",
+      "detail": "Operator-authored note; not an automatically generated build artifact.",
+      "created_at": "2026-11-10T01:26:14.803Z",
+      "source": "operator"
     }
   ],
   "artifacts": [
+    {
+      "id": "bd8a3096-795b-4dbb-9707-b38ce484540a",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "task_id": null,
+      "title": "GitHub integration — receiver ready, live setup pending",
+      "content": "Implemented signed GitHub ingestion, repository identity checks, durable duplicate protection, normalized development evidence, and same-project task links. The Connections view distinguishes repository configuration from actual signed deliveries.\n\nLocal validation: 23 automated tests and a synthetic browser integration check passed. Synthetic fixtures are kept outside this project.\n\nLive activation is pending a secure server-side webhook secret, a public HTTPS receiver with persistent storage, and the GitHub webhook or App configuration. No real provider delivery or AI execution is claimed.\n\nSetup instructions: docs/GITHUB-INTEGRATION.md.",
+      "created_at": "2026-11-10T01:26:14.803Z"
+    },
     {
       "id": "e36d9433-5d62-4f7d-80e8-90270e5544bb",
       "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
@@ -189,6 +221,20 @@
     }
   ],
   "tickets": [],
-  "published_at": "2026-11-10T01:05:16.538Z",
-  "preview_mode": "read-only"
+  "published_at": "2026-11-10T01:26:14.806Z",
+  "preview_mode": "read-only",
+  "github": {
+    "bindings": [
+      {
+        "id": "b2fb1a5e-6865-487b-866e-41a8aa6d3419",
+        "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+        "repository_id": 1171152130,
+        "full_name": "JusAlec/jubilant-octo-robot",
+        "installation_id": null,
+        "created_at": "2026-11-10T01:26:14.802Z",
+        "last_received_at": null
+      }
+    ],
+    "evidence": []
+  }
 }

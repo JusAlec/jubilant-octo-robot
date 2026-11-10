@@ -46,9 +46,13 @@ try:
         page.keyboard.press('Escape')
         nav.get_by_role('button',name='Support',exact=True).click()
         expect(page.get_by_role('button',name='New ticket',exact=True)).to_be_disabled()
+        nav.get_by_role('button',name='Connections',exact=True).click()
+        expect(page.get_by_text('Awaiting first delivery',exact=True)).to_be_visible()
+        expect(page.get_by_role('button',name='Save repository mapping',exact=True)).to_have_count(0)
+        expect(page.get_by_text('No repositories mapped yet. No live GitHub connection is claimed.',exact=True)).to_have_count(0)
         for width in [390,768,1440]:
             page.set_viewport_size({'width':width,'height':900})
-            for tab in ['Office','Tasks','Activity','Deliverables','Support']:
+            for tab in ['Office','Tasks','Activity','Deliverables','Support','Connections']:
                 nav.get_by_role('button',name=tab,exact=True).click()
                 assert not page.evaluate('document.documentElement.scrollWidth>innerWidth'),(width,tab)
         assert not [r for r in requests if '/api/' in r[1] or r[0]!='GET'],requests

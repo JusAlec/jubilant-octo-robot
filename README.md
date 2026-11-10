@@ -51,3 +51,7 @@ This is a **local single-operator app**, not a private customer portal yet. Spec
 GitHub Pages uses `npm run build:pages` to publish an explicitly read-only workspace preview. It reads the reviewed QR8 self-build snapshot in `public/preview/workspace.json`, disables writes, and never calls the internal API. `python scripts/pages-smoke.py` validates the Pages build under the repository URL path.
 
 The default `npm run build` retains the backend-enabled application. Pages cannot host the Node API or database; editable external use needs backend hosting and authentication. The snapshot is checked in deliberately; builds do not export the database or automatically publish new internal data. No deployment is performed by local builds.
+
+## GitHub development evidence
+
+The Connections view maps a repository and displays signed development evidence. See [GitHub integration setup](docs/GITHUB-INTEGRATION.md) for the dedicated receiver, secret handling, event subscriptions, local tests, and outstanding live setup. `npm run start:webhooks` runs only the signed receiver, not the operator API. No webhook secret or live connection is bundled with the app.

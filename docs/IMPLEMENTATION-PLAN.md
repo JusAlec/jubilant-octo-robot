@@ -38,3 +38,6 @@ Make team/office configuration editable, add fair scheduling and per-project quo
 
 ## Validation approach
 API/store tests must demonstrate validation, project-scoped references, correct task ownership, conflict rejection, atomic event writes, and file-backed restart persistence. Browser checks must exercise independent sessions, notes/tickets, project switching, network failure, and responsive views. Production identity, customer permissions, execution, and remote deployment require their own later validation.
+
+## Step 3 progress — signed GitHub ingestion implemented
+The receiver, repository bindings, durable delivery/evidence storage, task links, source-labeled activity, and Connections UI are implemented. Local signature, isolation, restart, and browser tests use synthetic fixtures. Live activation is pending a secure server-side webhook secret, a public HTTPS receiver backed by persistent storage, and a GitHub hook/App configuration. See [GitHub integration setup](GITHUB-INTEGRATION.md). No agent execution or live provider connection is claimed.

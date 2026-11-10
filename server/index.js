@@ -7,7 +7,7 @@ const root=fileURLToPath(new URL('..',import.meta.url));
 const filename=process.env.QR8_DB_PATH || resolve(root,'.data/qr8.sqlite');
 mkdirSync(dirname(filename),{recursive:true,mode:0o700});
 const store=createStore(filename);
-const server=createApi(store);
+const server=createApi(store,{webhookSecret:process.env.QR8_GITHUB_WEBHOOK_SECRET});
 const port=Number(process.env.QR8_API_PORT || 3001);
 server.listen(port,'127.0.0.1',()=>console.log(`QR8 internal API listening on 127.0.0.1:${port}. SQLite persistence enabled. No external customer access.`));
 server.on('error',error=>{console.error(error.message);store.close();process.exit(1);});
