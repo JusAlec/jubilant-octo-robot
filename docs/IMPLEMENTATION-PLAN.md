@@ -1,43 +1,27 @@
 # QR8 implementation plan
 
-## Product goal
-Build a functional visual delivery workspace first. Explore marketing later. The office is one view over project work; tasks, activity, notes, support, and eventually execution remain useful independently of the visual floor plan.
+## Current direction
+Focus on a useful editable project workflow. Marketing and live GitHub automation are deferred. The office visualizes recorded work; the conventional request/task views remain the source of clarity.
 
-## Steps 1 and 2 — implemented for internal development
+## Delivered: internal workspace and persistence
+App-first navigation; persistent projects, task assignments/status, notes, support tickets, and activity; version conflict protection; cross-session and restart persistence. The local backend uses SQLite behind a JSON API because no hosted database is configured. Project scoping is implemented for correctness, not as authenticated customer isolation.
 
-### 1. App workspace
-- Open directly into project navigation, not the marketing landing page.
-- Create and switch projects; use Office, Tasks, Activity, Deliverables, and Support.
-- Inspect team assignments, create tasks, and update their status/assignee.
-- Use mobile team/list views, keyboard-accessible controls, native dialogs, and reduced motion.
+## Delivered: manual request-to-release workflow
+Requests -> product review -> optional engineering consultation -> versioned scope approval -> linked implementation tasks -> versioned deliverable -> QA -> customer review -> recorded release -> closure. Includes comments, change requests, decision history, guarded transitions, and review-stage office visualization. Approval attribution is manually recorded by the operator; it is not customer authentication. See [workflow documentation](REQUEST-WORKFLOW.md).
 
-### 2. Persistent project data
-- Server-backed SQLite storage for projects, project role assignments, tasks, activity, notes, and support tickets.
-- JSON API boundary independent of the database implementation.
-- Transactional task/history writes, task version conflict checks, and unique active assignments.
-- Project-scoped data reads/writes and linked-note validation.
-- Shared state across independent browser sessions and server restarts.
-- Five-second foreground polling; visible errors/stale state when the backend is unavailable.
+The public Pages review is read-only and includes an explicitly illustrative booking workflow. The internal app is editable. No AI execution or real deployment is triggered by workflow actions.
 
-No Supabase binding is configured. SQLite makes this phase operational without requiring credentials. It is an internal development store; hosted Postgres and authenticated customer access are not claimed complete. See [workspace architecture](WORKSPACE-ARCHITECTURE.md).
+## Next priority: hosted editable pilot
+Deploy the API and persistent database behind authentication. Implement explicit project memberships and reviewer permissions, protect all data/file/preview channels, add backups/restore and operational monitoring, and verify two customer accounts plus revocation. Avoid exposing the local single-operator API publicly. GitHub Pages cannot run the backend.
 
-## Step 3 — real development events
-Connect a scoped GitHub App; validate webhook signatures, bind repository installations to project scope, deduplicate deliveries, and save events durably before publication. Link PRs, checks, and deployment evidence to tasks. Replace polling with authorized subscriptions and cursor recovery as needed. Keep operator updates distinct from verified integration events.
+## Next product milestone: one real agent workflow
+Once the human workflow is validated, connect one isolated agent runner to a task. Capture actual execution, failures, artifacts, tests, and human review. Add bounded retries, cancellation, scoped credentials, budgets, and recovery without duplicate external effects. Keep planned specialist roles distinct from executing agents.
 
-## Step 4 — executable agent workflow
-Implement one narrowly scoped runtime adapter and an isolated worker. Connect task -> execution -> artifact/PR -> tests -> review. Add bounded retries, checkpoints, cancellation, per-project credentials and budgets, and recovery without duplicate external effects. Privileged actions and deployment require appropriate human review. Do not represent role assignments as running agents until this exists.
+## Collaboration expansion
+Add authenticated customer conversation, support ticket replies/internal notes, file uploads, notifications, and reviewer-specific approval rights. Expand scope/budget/dependency handling from observed pilot needs.
 
-## Step 5 — customer collaboration
-Expand persisted tickets to replies, internal notes, status workflows, private attachments, and notifications. Add approvals bound to specific artifact versions. Capture QR8's own development as actual evidence, with an explicitly safe public projection if later desired.
+## Deferred: GitHub automation
+The signed receiver, repository mappings, and evidence/task links are implemented and tested with synthetic fixtures. Live activation is not required for the current workflow and remains deferred. It still needs a hosted HTTPS receiver, secure webhook secret, and GitHub configuration. See [integration documentation](GITHUB-INTEGRATION.md).
 
-## Step 6 — secure external pilot
-Add hosted persistence and deployable API/worker infrastructure. Implement user authentication, explicit project memberships, roles, database policies, protected previews, and private artifact storage. Test two customers, revocation, and every data channel. Existing project-scoped queries alone are not a security boundary. GitHub Pages cannot run the API/database.
-
-## Later — multiple teams and operations
-Make team/office configuration editable, add fair scheduling and per-project quotas, and validate backup/restore, monitoring, retention, and concurrent workloads. Isolate project memory, files, credentials, and artifacts. Profile before adopting a canvas renderer or larger streaming infrastructure.
-
-## Validation approach
-API/store tests must demonstrate validation, project-scoped references, correct task ownership, conflict rejection, atomic event writes, and file-backed restart persistence. Browser checks must exercise independent sessions, notes/tickets, project switching, network failure, and responsive views. Production identity, customer permissions, execution, and remote deployment require their own later validation.
-
-## Step 3 progress — signed GitHub ingestion implemented
-The receiver, repository bindings, durable delivery/evidence storage, task links, source-labeled activity, and Connections UI are implemented. Local signature, isolation, restart, and browser tests use synthetic fixtures. Live activation is pending a secure server-side webhook secret, a public HTTPS receiver backed by persistent storage, and a GitHub hook/App configuration. See [GitHub integration setup](GITHUB-INTEGRATION.md). No agent execution or live provider connection is claimed.
+## Later: multiple teams and public marketing
+Editable team layouts and scheduling, per-project quotas, larger-scale operations, and a marketing landing page follow a validated product experience. Isolate project data, memory, secrets, and artifacts. Profile before adding a game engine or a large streaming stack.

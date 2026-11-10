@@ -55,3 +55,9 @@ The default `npm run build` retains the backend-enabled application. Pages canno
 ## GitHub development evidence
 
 The Connections view maps a repository and displays signed development evidence. See [GitHub integration setup](docs/GITHUB-INTEGRATION.md) for the dedicated receiver, secret handling, event subscriptions, local tests, and outstanding live setup. `npm run start:webhooks` runs only the signed receiver, not the operator API. No webhook secret or live connection is bundled with the app.
+
+## Enhancement requests
+
+Open **Requests** to work from a customer goal through product/engineering review, scope approval, linked tasks, QA, customer feedback, and recorded release. The internal app is editable and persists the workflow; GitHub integration is not required. See [request workflow](docs/REQUEST-WORKFLOW.md). `python scripts/workflow-browser-smoke.py` exercises a complete example against a separate test database.
+
+The Pages preview includes a labeled illustrative booking scenario and remains read-only. Hosting and authenticating the editable app is the next infrastructure priority.

@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
+import { createWorkflow } from './workflow.js';
 import { normalizeGitHub } from './github.js';
 import { agents, departments } from '../src/data/office.js';
 
@@ -44,8 +45,8 @@ export function createStore(filename) {
   }
   function project(id) { const row = db.prepare('SELECT * FROM projects WHERE id=?').get(id); if (!row) throw new AppError(404, 'Project not found.'); return row; }
   function task(projectId, id) { project(projectId); const row = db.prepare('SELECT * FROM tasks WHERE project_id=? AND id=?').get(projectId, id); if (!row) throw new AppError(404, 'Task not found in this project.'); return row; }
-  function event(projectId, type, summary, detail = '', taskId = null, agentId = null) {
-    db.prepare('INSERT INTO events(id,project_id,task_id,agent_id,type,summary,detail,created_at) VALUES(?,?,?,?,?,?,?,?)').run(randomUUID(),projectId,taskId,agentId,type,summary,detail,new Date().toISOString());
+  function event(projectId, type, summary, detail = '', taskId = null, agentId = null, requestId = null) {
+    db.prepare('INSERT INTO events(id,project_id,task_id,agent_id,type,summary,detail,created_at,request_id) VALUES(?,?,?,?,?,?,?,?,?)').run(randomUUID(),projectId,taskId,agentId,type,summary,detail,new Date().toISOString(),requestId);
   }
   function agent(projectId, id) {
     if (id === null) return null;
@@ -67,16 +68,18 @@ export function createStore(filename) {
       return project(id);
     });
   }
+  const workflow=createWorkflow(db,{project,text,transaction,event});
   // Initialize an actual internal project, never import the replay as real history.
   if (!db.prepare('SELECT 1 FROM projects LIMIT 1').get()) createProject({ name: 'Building QR8', description: 'Our internal workspace for building the visual AI office. Tasks and activity are managed by the operator; agent execution is not connected yet.' });
   return {
     close: () => db.close(),
+    createRequest:workflow.create, requestAction:workflow.action, commentRequest:workflow.comment,
     listProjects: () => db.prepare('SELECT p.*, (SELECT count(*) FROM tasks t WHERE t.project_id=p.id) AS task_count FROM projects p ORDER BY created_at,id').all(),
     createProject,
     snapshot(projectId) {
       const p = project(projectId);
       const assigned = new Set(db.prepare('SELECT agent_id FROM project_agents WHERE project_id=?').all(projectId).map(r=>r.agent_id));
-      return { project: p, agents: agents.filter(a=>assigned.has(a.id)), departments, tasks: db.prepare('SELECT * FROM tasks WHERE project_id=? ORDER BY created_at,id').all(projectId), events: db.prepare('SELECT * FROM events WHERE project_id=? ORDER BY sequence DESC LIMIT 500').all(projectId).reverse(), artifacts: db.prepare('SELECT * FROM artifacts WHERE project_id=? ORDER BY created_at DESC,id').all(projectId), tickets: db.prepare('SELECT * FROM tickets WHERE project_id=? ORDER BY created_at DESC,id').all(projectId), github: { bindings: db.prepare('SELECT * FROM github_bindings WHERE project_id=?').all(projectId), evidence: db.prepare('SELECT * FROM github_evidence WHERE project_id=? ORDER BY updated_at DESC,id').all(projectId) } };
+      return { workflow:workflow.snapshot(projectId), project: p, agents: agents.filter(a=>assigned.has(a.id)), departments, tasks: db.prepare('SELECT * FROM tasks WHERE project_id=? ORDER BY created_at,id').all(projectId), events: db.prepare('SELECT * FROM events WHERE project_id=? ORDER BY sequence DESC LIMIT 500').all(projectId).reverse(), artifacts: db.prepare('SELECT * FROM artifacts WHERE project_id=? ORDER BY created_at DESC,id').all(projectId), tickets: db.prepare('SELECT * FROM tickets WHERE project_id=? ORDER BY created_at DESC,id').all(projectId), github: { bindings: db.prepare('SELECT * FROM github_bindings WHERE project_id=?').all(projectId), evidence: db.prepare('SELECT * FROM github_evidence WHERE project_id=? ORDER BY updated_at DESC,id').all(projectId) } };
     },
     bindGitHub(projectId,input) {
       project(projectId);
@@ -149,9 +152,10 @@ export function createStore(filename) {
       const description = text(input.description ?? '', 'Description',5000,false);
       const agentId = agent(projectId,input.agent_id ?? null);
       return transaction(() => {
+        const requestId=workflow.validateTask(projectId,input.request_id||null);
         const id = randomUUID(), now = new Date().toISOString();
-        db.prepare('INSERT INTO tasks VALUES(?,?,?,?,?,?,1,?,?)').run(id,projectId,title,description,'Queued',agentId,now,now);
-        event(projectId,'task.created',`Task created: ${title}`,description,id,agentId);
+        db.prepare('INSERT INTO tasks(id,project_id,title,description,status,agent_id,version,created_at,updated_at,request_id) VALUES(?,?,?,?,?,?,1,?,?,?)').run(id,projectId,title,description,'Queued',agentId,now,now,requestId);
+        event(projectId,'task.created',`Task created: ${title}`,description,id,agentId,requestId);
         return task(projectId,id);
       });
     },
@@ -163,10 +167,11 @@ export function createStore(filename) {
         if (!statuses.includes(status)) throw new AppError(400,'Unknown task status.');
         const agentId = agent(projectId,Object.hasOwn(input,'agent_id') ? input.agent_id : current.agent_id);
         checkAvailability(projectId,agentId,status,id);
+        workflow.beforeTaskUpdate(current,status,agentId);
         if (status === current.status && agentId === current.agent_id) return current;
         db.prepare('UPDATE tasks SET status=?,agent_id=?,version=version+1,updated_at=? WHERE id=? AND project_id=?').run(status,agentId,new Date().toISOString(),id,projectId);
         const who = agents.find(a=>a.id===agentId)?.name || 'Unassigned';
-        event(projectId,'task.updated',`${current.title} → ${status}`,`Assignment: ${who}. Updated by the local operator; no agent execution was triggered.`,id,agentId);
+        event(projectId,'task.updated',`${current.title} → ${status}`,`Assignment: ${who}. Updated by the local operator; no agent execution was triggered.`,id,agentId,current.request_id);
         return task(projectId,id);
       });
     },

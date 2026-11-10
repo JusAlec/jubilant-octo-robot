@@ -29,6 +29,11 @@ export function createApi(store, { webhookSecret, allowedOrigins = ['http://127.
         if(req.method==='GET') return send(200,{projects:store.listProjects()});
         if(req.method==='POST') return send(201,store.createProject(await body(req)));
       }
+      const workflowRoute=path.match(/^\/api\/projects\/([a-zA-Z0-9-]+)\/requests(?:\/([a-zA-Z0-9-]+)\/(actions|comments))?$/);
+      if(workflowRoute&&req.method==='POST'){
+        const [,projectId,id,resource]=workflowRoute,input=await body(req);
+        return send(id?200:201,!id?store.createRequest(projectId,input):resource==='actions'?store.requestAction(projectId,id,input):store.commentRequest(projectId,id,input));
+      }
       const match=path.match(/^\/api\/projects\/([a-zA-Z0-9-]+)(?:\/(snapshot|tasks|artifacts|tickets|github-bindings|github-evidence)(?:\/([a-zA-Z0-9-]+))?)?$/);
       if (!match) throw new AppError(404,'Endpoint not found.');
       const [,projectId,resource,id]=match;

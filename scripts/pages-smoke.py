@@ -27,13 +27,20 @@ try:
         expect(page.get_by_role('heading',name='Building QR8.',exact=True)).to_be_visible()
         expect(page.get_by_text('Read-only preview',exact=True)).to_be_visible()
         expect(page.get_by_role('button',name='New project',exact=True)).to_be_disabled()
-        expect(page.get_by_role('button',name='New task',exact=True).first).to_be_disabled()
+        expect(page.get_by_role('button',name='New request',exact=True).first).to_be_disabled()
+        page.get_by_role('navigation',name='Project navigation').get_by_role('button',name='Office',exact=True).click()
         page.get_by_role('button',name=re.compile('Inspect Atlas,')).click()
         expect(page.get_by_role('dialog',name='Atlas')).to_be_visible()
         page.keyboard.press('Escape')
         nav=page.get_by_role('navigation',name='Project navigation')
+        nav.get_by_role('button',name='Requests',exact=True).click()
+        page.locator('.request-card').filter(has_text='[Example] Add consultation booking').click()
+        expect(page.get_by_role('dialog')).to_contain_text('no real customer approval')
+        expect(page.get_by_role('dialog').get_by_text('Customer review',exact=True).first).to_be_visible()
+        expect(page.get_by_role('dialog').get_by_role('button',name='Record customer approval')).to_have_count(0)
+        page.keyboard.press('Escape')
         nav.get_by_role('button',name='Tasks',exact=True).click()
-        expect(page.locator('.task-row')).to_have_count(3)
+        expect(page.locator('.task-row')).to_have_count(4)
         page.get_by_role('button',name=re.compile('Connect GitHub project events')).click()
         expect(page.get_by_role('dialog').get_by_label('Status',exact=True)).to_be_disabled()
         expect(page.get_by_role('dialog').get_by_role('button',name='Read-only preview')).to_be_disabled()
@@ -52,7 +59,7 @@ try:
         expect(page.get_by_text('No repositories mapped yet. No live GitHub connection is claimed.',exact=True)).to_have_count(0)
         for width in [390,768,1440]:
             page.set_viewport_size({'width':width,'height':900})
-            for tab in ['Office','Tasks','Activity','Deliverables','Support','Connections']:
+            for tab in ['Office','Requests','Tasks','Activity','Deliverables','Support','Connections']:
                 nav.get_by_role('button',name=tab,exact=True).click()
                 assert not page.evaluate('document.documentElement.scrollWidth>innerWidth'),(width,tab)
         assert not [r for r in requests if '/api/' in r[1] or r[0]!='GET'],requests

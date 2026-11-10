@@ -27,3 +27,12 @@ test('API validation and missing routes return structured errors without saving'
  assert.equal((await fetch(url+'/api/missing')).status,404);
  assert.equal(store.snapshot(p.id).tasks.length,0);
 });
+test('request workflow API creates scoped records, comments, and guarded actions',async t=>{
+ const {url}=await setup(t),p=(await fetch(url+'/api/projects').then(r=>r.json())).projects[0];
+ const root=`${url}/api/projects/${p.id}/requests`;
+ const response=await fetch(root,json({title:'Booking request',description:'Add booking.',requester:'Operator'}));assert.equal(response.status,201);const request=await response.json();
+ const start=await fetch(`${root}/${request.id}/actions`,json({action:'start_product_review',version:1,notes:'Review the need.'}));assert.equal(start.status,200);
+ assert.equal((await fetch(`${root}/${request.id}/comments`,json({author:'Operator',body:'A question.'}))).status,200);
+ assert.equal((await fetch(`${root}/${request.id}/actions`,json({action:'record_release',version:2,notes:'Skip'}))).status,409);
+ const s=await fetch(`${url}/api/projects/${p.id}/snapshot`).then(r=>r.json());assert.equal(s.workflow.requests[0].stage,'Product review');assert.equal(s.workflow.comments.length,1);
+});
