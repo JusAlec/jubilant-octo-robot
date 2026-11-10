@@ -1,0 +1,194 @@
+{
+  "project": {
+    "id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+    "name": "Building QR8",
+    "description": "Our internal workspace for building the visual AI office. Tasks and activity are managed by the operator; agent execution is not connected yet.",
+    "created_at": "2026-11-10T00:37:18.016Z"
+  },
+  "agents": [
+    {
+      "id": "nova",
+      "name": "Nova",
+      "role": "Product lead",
+      "initials": "NO",
+      "department": "product",
+      "color": "green",
+      "description": "Turns the brief into a clear plan, prioritizes the backlog, and keeps the team moving in the same direction."
+    },
+    {
+      "id": "sage",
+      "name": "Sage",
+      "role": "UX designer",
+      "initials": "SA",
+      "department": "product",
+      "color": "green",
+      "description": "Shapes the customer journey, explores the interface, and makes the complex feel simple."
+    },
+    {
+      "id": "atlas",
+      "name": "Atlas",
+      "role": "Lead engineer",
+      "initials": "AT",
+      "department": "engineering",
+      "color": "blue",
+      "description": "Connects product decisions to implementation and builds the foundations of the QR8 office."
+    },
+    {
+      "id": "pixel",
+      "name": "Pixel",
+      "role": "Frontend engineer",
+      "initials": "PI",
+      "department": "engineering",
+      "color": "blue",
+      "description": "Brings the office to life with responsive interfaces, interaction, and thoughtful motion."
+    },
+    {
+      "id": "echo",
+      "name": "Echo",
+      "role": "QA engineer",
+      "initials": "EC",
+      "department": "quality",
+      "color": "amber",
+      "description": "Checks the experience, tests the edge cases, and gives every release a second look."
+    },
+    {
+      "id": "orbit",
+      "name": "Orbit",
+      "role": "Release engineer",
+      "initials": "OR",
+      "department": "quality",
+      "color": "amber",
+      "description": "Prepares builds, tracks release readiness, and keeps the path to delivery clear."
+    }
+  ],
+  "departments": [
+    {
+      "id": "product",
+      "name": "Product & strategy",
+      "color": "green",
+      "subtitle": "THE BIG PICTURE"
+    },
+    {
+      "id": "engineering",
+      "name": "Engineering",
+      "color": "blue",
+      "subtitle": "MAKING IT REAL"
+    },
+    {
+      "id": "quality",
+      "name": "Quality & release",
+      "color": "amber",
+      "subtitle": "THE FINAL DETAILS"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "c5aea6c1-006f-40bd-8ac5-e449a05b0d3d",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "title": "Connect GitHub project events",
+      "description": "Next integration: verify repository webhooks, persist events, and link pull requests, checks, and deployments to project tasks.",
+      "status": "Queued",
+      "agent_id": "atlas",
+      "version": 1,
+      "created_at": "2026-11-10T00:42:44.228Z",
+      "updated_at": "2026-11-10T00:42:44.228Z"
+    },
+    {
+      "id": "e440c7d0-0ccb-4d57-a54b-aebda80f9a61",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "title": "Define customer project access",
+      "description": "Plan authenticated users, explicit project memberships, roles, protected previews, and private artifact policies before external use.",
+      "status": "Queued",
+      "agent_id": "nova",
+      "version": 1,
+      "created_at": "2026-11-10T00:42:44.234Z",
+      "updated_at": "2026-11-10T00:42:44.234Z"
+    },
+    {
+      "id": "12830505-05f6-4507-a81b-04c1543be49c",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "title": "Build an isolated agent task runner",
+      "description": "Next execution milestone: one scoped task produces a reviewable code change and test evidence with bounded retries and human review.",
+      "status": "Queued",
+      "agent_id": "orbit",
+      "version": 1,
+      "created_at": "2026-11-10T00:42:44.238Z",
+      "updated_at": "2026-11-10T00:42:44.238Z"
+    }
+  ],
+  "events": [
+    {
+      "sequence": 1,
+      "id": "5f534f00-0e6d-4996-b748-420440b5529b",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "task_id": null,
+      "agent_id": null,
+      "type": "project.created",
+      "summary": "Project created: Building QR8",
+      "detail": "Created by the local workspace operator.",
+      "created_at": "2026-11-10T00:37:18.016Z",
+      "source": "operator"
+    },
+    {
+      "sequence": 2,
+      "id": "95f03810-544f-4558-a924-defe06aa0325",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "task_id": "c5aea6c1-006f-40bd-8ac5-e449a05b0d3d",
+      "agent_id": "atlas",
+      "type": "task.created",
+      "summary": "Task created: Connect GitHub project events",
+      "detail": "Next integration: verify repository webhooks, persist events, and link pull requests, checks, and deployments to project tasks.",
+      "created_at": "2026-11-10T00:42:44.228Z",
+      "source": "operator"
+    },
+    {
+      "sequence": 3,
+      "id": "d0410271-31d2-4e7f-ad9f-057634423344",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "task_id": "e440c7d0-0ccb-4d57-a54b-aebda80f9a61",
+      "agent_id": "nova",
+      "type": "task.created",
+      "summary": "Task created: Define customer project access",
+      "detail": "Plan authenticated users, explicit project memberships, roles, protected previews, and private artifact policies before external use.",
+      "created_at": "2026-11-10T00:42:44.234Z",
+      "source": "operator"
+    },
+    {
+      "sequence": 4,
+      "id": "ce76d136-6f7a-4dc2-bf4c-aa8ebe8ad6bd",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "task_id": "12830505-05f6-4507-a81b-04c1543be49c",
+      "agent_id": "orbit",
+      "type": "task.created",
+      "summary": "Task created: Build an isolated agent task runner",
+      "detail": "Next execution milestone: one scoped task produces a reviewable code change and test evidence with bounded retries and human review.",
+      "created_at": "2026-11-10T00:42:44.239Z",
+      "source": "operator"
+    },
+    {
+      "sequence": 5,
+      "id": "44b6ee4b-249d-45ff-b7d7-186afef672b9",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "task_id": null,
+      "agent_id": null,
+      "type": "artifact.created",
+      "summary": "Project note added: Workspace foundation — steps 1 and 2",
+      "detail": "Operator-authored note; not an automatically generated build artifact.",
+      "created_at": "2026-11-10T00:42:44.242Z",
+      "source": "operator"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "e36d9433-5d62-4f7d-80e8-90270e5544bb",
+      "project_id": "c87a7009-80b8-4dd8-8e34-758e80c72903",
+      "task_id": null,
+      "title": "Workspace foundation — steps 1 and 2",
+      "content": "Implemented: app-first navigation; server-backed projects, assignments, tasks, notes, support tickets, and recorded activity; version conflict protection; database restart persistence.\n\nCurrent operation: local single-operator SQLite workspace. Statuses are manual, not agent execution telemetry.\n\nNext: verified GitHub events, an isolated worker, and authenticated project access before external use.\n\nSee docs/IMPLEMENTATION-PLAN.md and docs/WORKSPACE-ARCHITECTURE.md for the implementation and deployment boundaries.",
+      "created_at": "2026-11-10T00:42:44.242Z"
+    }
+  ],
+  "tickets": [],
+  "published_at": "2026-11-10T01:05:16.538Z",
+  "preview_mode": "read-only"
+}

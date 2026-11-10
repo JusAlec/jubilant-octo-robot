@@ -1,51 +1,53 @@
-# QR8 / Visual Agent Office
+# QR8 / Project workspace
 
-A visual AI delivery studio, starting with an interactive public demonstration of the QR8 build. React 18 + Vite 6; no additional runtime packages.
+An internal project application for the visual AI office. Open the workspace directly, manage tasks and assignments, record decisions, and follow saved project activity.
 
-## Develop
+## Start
+
+Node 24 recommended (minimum 22.13).
 
 ```bash
 npm ci
-npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
+npm run dev
 ```
+
+This starts a loopback-only Node API and Vite frontend. SQLite data persists in `.data/qr8.sqlite` and is excluded from Git. `QR8_DB_PATH` can select another database. No hosted database credentials are required for this internal version.
 
 ## Validate
 
 ```bash
-node --test tests/office.test.js
+npm test
 npm run build
 ```
 
-For browser coverage, use an environment with Python Playwright and Chromium at `/usr/bin/chromium`. Start the development server above, then run:
+For functional browser checks, use Python Playwright and `/usr/bin/chromium`. Start the app with a test database, then run the test script in a separate terminal:
 
 ```bash
+QR8_DB_PATH=/tmp/qr8-browser.sqlite npm run dev
 python scripts/browser-smoke.py
 ```
 
-`QR8_TEST_URL` can point the same browser checks at a local production preview. Run `npm run preview -- --host 0.0.0.0 --port 4173 --strictPort`, then `QR8_TEST_URL=http://127.0.0.1:4173/ python scripts/browser-smoke.py`.
+The script creates uniquely named test projects. `QR8_TEST_URL` can point it at a local production preview. With the API running, start `npm run preview -- --port 4173 --strictPort`, then run `QR8_TEST_URL=http://127.0.0.1:4173/ python scripts/browser-smoke.py`.
 
-## First-build scope
+## Current functionality
 
-- A new landing page, configurable office departments, and six inspectable agents.
-- An ordered replay fixture drives task ownership, statuses, activity, and demonstration deliverable notes.
-- Play/pause, speed, restart, and seek controls. These control visualization only.
-- Tasks, activity, deliverables, and a local support draft experience.
-- Responsive office/team views, keyboard tab navigation, native dialogs, and reduced motion.
+- Project creation and switching, with project-specific tasks, notes, support, and history.
+- Persistent tasks with assignment, status, search, and filtering.
+- Office/team views driven by saved assignments rather than timed replay fixtures.
+- Recorded operator activity, text project notes linked to tasks, and saved support tickets.
+- Task version checks to prevent stale-session overwrites; transactional mutation/event writes.
+- Independent browser sessions see the same database-backed state.
+- Explicit offline errors and retry behavior; no fake browser-only success fallback.
 
-The replay is authored demonstration content, not captured historical telemetry or live development. Agent identities, timestamps, and deliverable notes are illustrative. Support drafts remain in local browser storage; they are not sent or monitored. No login, customer isolation, actual artifact delivery, or agent execution is implemented. Do not enter confidential information in the prototype.
+This is a **local single-operator app**, not a private customer portal yet. Specialist definitions do not run AI jobs. Tickets do not send notifications. Customer authentication, membership policies, hosted persistence, uploads, execution integrations, and production operations are subsequent phases. Do not expose the local API or Vite proxy publicly.
 
-## Implementation plan
+## Documentation
 
-See [the high-level implementation plan](docs/IMPLEMENTATION-PLAN.md) for secure project access, event ingestion, real agent/GitHub integration, customer support, and multi-team operations.
-
-Key files:
-
-- `src/App.jsx`: landing, project navigation, office, inspectors, local support.
-- `src/data/office.js`: demonstration data and pure event projection.
-- `src/styles/office.css`: responsive visual system.
-- `tests/office.test.js`: event projection and ownership checks.
-- `scripts/browser-smoke.py`: functional browser checks.
+- [Implementation plan](docs/IMPLEMENTATION-PLAN.md)
+- [Architecture, API, storage, and operational notes](docs/WORKSPACE-ARCHITECTURE.md)
 
 ## Deployment
 
-The existing GitHub Actions workflow builds and deploys `dist/` to GitHub Pages on a push to `main`. No deployment is performed by local builds. Future authenticated services and execution workers require separate backend hosting. Optional Google Fonts have local system fallbacks.
+GitHub Pages uses `npm run build:pages` to publish an explicitly read-only workspace preview. It reads the reviewed QR8 self-build snapshot in `public/preview/workspace.json`, disables writes, and never calls the internal API. `python scripts/pages-smoke.py` validates the Pages build under the repository URL path.
+
+The default `npm run build` retains the backend-enabled application. Pages cannot host the Node API or database; editable external use needs backend hosting and authentication. The snapshot is checked in deliberately; builds do not export the database or automatically publish new internal data. No deployment is performed by local builds.

@@ -1,110 +1,94 @@
-import { useEffect, useRef, useState } from 'react';
-import { agents, departments, events, tasks, projectOffice } from './data/office';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { request, isStaticPreview } from './api';
+import Office from './components/workspace/Office';
+import { Brand, Icon, Status } from './components/workspace/Primitives';
+import CreateDialog from './components/workspace/Forms';
+import { TaskDetails, AgentDetails, ArtifactDetails } from './components/workspace/Details';
+import './styles/workspace.css';
 
-function Icon({ name, size = 18, ...props }) {
-  const paths = { grid: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z', arrow: 'M5 12h14m-5-5 5 5-5 5', play: 'm9 5 10 7-10 7Z', pause: 'M8 5v14M16 5v14', reset: 'M3 10a9 9 0 1 1 2 8M3 4v6h6', check: 'm5 12 4 4L19 6', activity: 'M3 12h4l3-7 4 14 3-7h4', folder: 'M3 7V5h6l2 2h10v13H3Z', ticket: 'M4 4h16v5a3 3 0 0 0 0 6v5H4v-5a3 3 0 0 0 0-6Zm8 0v3m0 3v4m0 3v3', globe: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM3 12h18M12 3a18 18 0 0 1 0 18 18 18 0 0 1 0-18Z', lock: 'M6 10h12v11H6ZM8 10V7a4 4 0 0 1 8 0v3', people: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M13 3a4 4 0 0 1 0 8M22 21v-2a4 4 0 0 0-3-4M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z', code: 'm8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 16', close: 'm6 6 12 12M6 18 18 6', plus: 'M12 5v14M5 12h14', chevron: 'm9 5 7 7-7 7', external: 'M14 3h7v7m0-7L10 14M10 3H3v18h18v-7', leaf: 'M20 4C8 2 3 8 6 15c7 4 14-1 14-11ZM5 20 15 10', info: 'M12 11v6m0-10v1M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z' };
-  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d={paths[name] || paths.grid} /></svg>;
-}
-function Brand() { return <a className="brand" href="#" aria-label="QR8 home"><span className="brand-symbol"><i /><i /><i /><i /></span>qr8<span className="brand-studio">/ studio</span></a>; }
-function Avatar({ agent, small = false }) { return <span className={`avatar ${agent.color} ${small ? 'small' : ''}`}><span className="avatar-eyes">··</span><span className="avatar-mouth" /></span>; }
-function Status({ children }) { return <span className={`status ${children.toLowerCase().replaceAll(' ', '-')}`}><i />{children}</span>; }
-
-function Inspector({ selection, state, close }) {
-  const dialog = useRef(null);
-  const previousFocus = useRef(document.activeElement);
-  useEffect(() => {
-    const element = dialog.current;
-    element.showModal();
-    return () => { element.close(); if (previousFocus.current?.isConnected) previousFocus.current.focus(); };
-  }, []);
-  const isAgent = selection.kind === 'agent';
-  const agent = agents.find(a => a.id === selection.id);
-  const task = tasks.find(t => t.id === (isAgent ? state.agentStates[agent.id].taskId : selection.id));
-  const status = isAgent ? state.agentStates[agent.id].status : state.taskStates[task.id].status;
-  const history = state.visible.filter(e => isAgent ? e.agentId === agent.id : e.taskId === task.id);
-  const evidence = task && state.visible.some(e => e.taskId === task.id && e.evidence);
-  return <dialog ref={dialog} className="inspector" onCancel={close} onClick={e => { if (e.target === dialog.current) close(); }} aria-labelledby="inspector-title">
-    <div className="inspector-body"><div className="inspector-top"><span className="eyebrow">{isAgent ? 'MEET YOUR TEAM' : 'TASK DETAILS'}</span><button className="icon-button" onClick={close} aria-label="Close details"><Icon name="close" /></button></div>
-      {isAgent && <Avatar agent={agent} />}<h2 id="inspector-title">{isAgent ? agent.name : task.title}</h2><p className="inspector-sub">{isAgent ? agent.role : task.id}</p><Status>{status}</Status>
-      <p className="inspector-description">{isAgent ? agent.description : task.description}</p>
-      {isAgent && <div className="detail-callout"><span className="eyebrow">CURRENT ASSIGNMENT</span><strong>{task ? task.title : 'Ready for the next handoff'}</strong><p>{task ? task.id : 'No active assignment at this point in the replay.'}</p></div>}
-      {task && <><h3>Acceptance criteria</h3><ul className="criteria">{task.criteria.map(c => <li key={c}><Icon name="check" size={15} />{c}</li>)}</ul></>}
-      {evidence && <div className="artifact-note"><span className="eyebrow">{task.artifactType} · DEMONSTRATION</span><h3>{task.artifact}</h3><p>{task.artifactText}</p></div>}
-      <h3>Activity in this replay</h3>{history.length ? <div className="detail-history">{history.map(e => <div key={e.id}><time>{e.time}</time><p>{e.summary}</p></div>)}</div> : <p className="muted">No activity yet. Advance the replay to follow this agent.</p>}
-      <p className="demo-footnote">Illustrative replay. Agent identities, timestamps, and deliverables demonstrate the planned workflow.</p>
-    </div>
-  </dialog>;
-}
-
-function Office({ state, select, view }) {
-  const latest = state.visible.at(-1);
-  const review = latest?.type === 'review';
-  const participants = review ? [...new Set([latest.agentId, ...state.visible.filter(e => e.taskId === latest.taskId && e.agentId !== latest.agentId).slice(-1).map(e => e.agentId)])].map(id => agents.find(a => a.id === id)) : [];
-  return <div className={`office-floor ${view === 'list' ? 'list-mode' : ''}`}>
-    <div className="floor-top"><span><i className="floor-dot" /> QR8 HEADQUARTERS</span><span>FLOOR 01 <span className="floor-divider">/</span> THE BUILD TEAM</span></div>
-    <div className="departments">{departments.map((dept, index) => <section key={dept.id} className={`department ${dept.color}`} aria-label={dept.name}><header><span className="room-number">0{index + 1}</span><div><span className="room-kicker">{dept.subtitle}</span><h3>{dept.name}</h3></div><span className="room-count">02</span></header><div className="desk-row">{agents.filter(a => a.department === dept.id).map(agent => {
-      const current = state.agentStates[agent.id];
-      return <button key={agent.id} className={`agent-station ${current.status !== 'Available' ? 'station-active' : ''}`} onClick={() => select({ kind: 'agent', id: agent.id })} aria-label={`Inspect ${agent.name}, ${agent.role}, ${current.status}`}><div className="desk"><span className="monitor"><span className="code-line" /><span className="code-line" /><span className="code-line" /><span className="code-line" /></span><span className="keyboard" /><span className="desk-cup" /></div><div className="agent-seat"><Avatar agent={agent} /><span className="chair" /></div><span className="agent-name">{agent.name}<span className={`agent-dot ${current.status === 'Available' ? 'idle' : ''}`} /></span><span className="agent-role">{agent.role}</span><span className="agent-current">{current.taskId ? `${current.status} · ${current.taskId}` : 'Available'}</span><span className="list-status"><Status>{current.status}</Status></span></button>;
-    })}</div><div className="room-door" /></section>)}</div>
-    <div className="office-corridor"><span className="corridor-line" /><span className="corridor-caption"><Icon name="people" size={13} /> GOOD WORK HAPPENS TOGETHER</span><span className="corridor-line" /></div>
-    <div className="shared-rooms"><div className="lounge"><span className="room-label"><Icon name="leaf" size={14} /> THE RECHARGE CORNER</span><div className="lounge-scene"><span className="plant"><i /><i /><i /><b /></span><span className="sofa"><i /><i /></span><span className="coffee-table"><i /></span><span className="rug" /></div><span className="lounge-note">A little room to think.</span></div>
-      <div className={`meeting-room ${review ? 'meeting-active' : ''}`}><div className="meeting-heading"><span className="room-label"><Icon name="people" size={14} /> THE ROUND TABLE</span><span className="meeting-badge">{review ? 'DESIGN REVIEW' : 'OPEN FOR IDEAS'}</span></div><div className="meeting-scene"><span className="meeting-chair c1" /><span className="meeting-chair c2" /><span className="meeting-chair c3" /><span className="meeting-chair c4" /><span className="meeting-table"><span className="table-book" /><span className="table-cup" /><span className="table-paper" /></span>{participants.map((agent, i) => <span key={agent.id} className={`meeting-person mp${i + 1}`}><Avatar agent={agent} small /></span>)}</div><p>{review ? 'A fresh perspective. A better next step.' : 'Where handoffs become shared understanding.'}</p></div>
-      <div className="project-wall"><span className="room-label"><Icon name="folder" size={14} /> ON THE WALL</span><div className="wall-notes"><span className="sticky-note">Build in<br /><strong>the open.</strong><i>↗</i></span><span className="wall-paper"><span /><span /><span /><b>QR8 / V.01</b></span></div><span className="wall-caption">Small steps. Real progress.</span></div>
-    </div><div className="floor-bottom"><span><i /> {agents.filter(a => state.agentStates[a.id].status !== 'Available').length} agents on assignment</span><span>SELECT AN AGENT TO TAKE A CLOSER LOOK <Icon name="arrow" size={13} /></span></div>
-  </div>;
-}
-
-const initialTickets = [{ id: 'DEMO-001', subject: 'Can we see a mobile version of the office?', description: 'A list-first mobile view would make it easier to follow progress on the go.', status: 'In review' }];
-function Support() {
-  const [tickets, setTickets] = useState(() => { try { const stored = JSON.parse(localStorage.getItem('qr8-demo-tickets')); return Array.isArray(stored) && stored.every(t => typeof t.id === 'string' && typeof t.subject === 'string' && typeof t.description === 'string' && typeof t.status === 'string') ? stored : initialTickets; } catch { return initialTickets; } });
-  const [notice, setNotice] = useState('');
-  const [expanded, setExpanded] = useState(null);
-  function submit(e) {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const subject = form.elements.subject.value.trim();
-    const description = form.elements.description.value.trim();
-    if (!subject || !description) { setNotice('Please add a subject and a message.'); return; }
-    const updated = [{ id: `LOCAL-${Date.now().toString(36).toUpperCase()}`, subject, description, status: 'Local draft' }, ...tickets];
-    setTickets(updated);
-    try { localStorage.setItem('qr8-demo-tickets', JSON.stringify(updated)); setNotice('Draft saved in this browser. Nothing was sent to QR8.'); } catch { setNotice('Draft added for this session. Browser storage is unavailable; nothing was sent.'); }
-    form.reset();
+const tabs=[['Office','grid'],['Tasks','check'],['Activity','activity'],['Deliverables','folder'],['Support','ticket']];
+function projectState(snapshot){
+  const agentStates=Object.fromEntries(snapshot.agents.map(a=>[a.id,{status:'Available',taskId:null}]));
+  const taskStates=Object.fromEntries(snapshot.tasks.map(t=>[t.id,{status:t.status,agentId:t.agent_id}]));
+  for(const task of [...snapshot.tasks].sort((a,b)=>Number(a.status!=='Queued')-Number(b.status!=='Queued'))){
+    if(task.agent_id&&task.status!=='Complete')agentStates[task.agent_id]={status:task.status,taskId:task.id.slice(0,8).toUpperCase()};
   }
-  return <div className="support-layout"><div><span className="eyebrow">A DIRECT LINE TO THE TEAM</span><h3>Good projects start with a conversation.</h3><p className="muted">Try the support experience. These demonstration tickets stay in your browser and are not monitored. Don’t enter confidential information.</p><form className="support-form" onSubmit={submit}><label htmlFor="subject">Subject</label><input id="subject" name="subject" required maxLength={120} placeholder="What would you like to discuss?" /><label htmlFor="description">Your message</label><textarea id="description" name="description" required maxLength={2000} rows={4} placeholder="Share an idea, a question, or a little feedback…" /><button className="primary-button" type="submit">Save local draft <Icon name="arrow" size={15} /></button><p role="status" className="form-notice">{notice}</p></form></div><div className="ticket-list"><h3>Demonstration tickets <span>{tickets.length}</span></h3>{tickets.map(t => <div className="ticket" key={t.id}><button onClick={() => setExpanded(expanded === t.id ? null : t.id)} aria-expanded={expanded === t.id}><span><small>{t.id}</small><strong>{t.subject}</strong><Status>{t.status}</Status></span><Icon name="chevron" /></button>{expanded === t.id && <p>{t.description}</p>}</div>)}</div></div>;
+  return {agentStates,taskStates,visible:[],completed:snapshot.tasks.filter(t=>t.status==='Complete').length};
 }
-
-export default function App() {
-  const [tab, setTab] = useState('Office');
-  const [view, setView] = useState(() => window.matchMedia('(max-width: 600px)').matches ? 'list' : 'floor');
-  const [cursor, setCursor] = useState(6);
-  const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState(1);
-  const [selection, setSelection] = useState(null);
-  const state = projectOffice(events, cursor);
-  useEffect(() => {
-    if (!playing) return;
-    if (cursor >= events.length - 1) { setPlaying(false); return; }
-    const timer = setTimeout(() => setCursor(c => Math.min(events.length - 1, c + 1)), 2600 / speed);
-    return () => clearTimeout(timer);
-  }, [playing, speed, cursor]);
-  function open(selection) { setPlaying(false); setSelection(selection); }
-  function togglePlay() { if (!playing && cursor === events.length - 1) setCursor(0); setPlaying(!playing); }
-  function goOffice() { setTab('Office'); document.getElementById('workspace').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
-  const tabs = [['Office', 'grid'], ['Tasks', 'check'], ['Activity', 'activity'], ['Deliverables', 'folder'], ['Support', 'ticket']];
-  return <><a className="skip-link" href="#main">Skip to content</a><header className="site-header"><div className="header-inner"><Brand /><nav aria-label="Main navigation"><a className="nav-current" href="#workspace" onClick={() => setTab('Office')}>The office</a><a href="#how-it-works">How it works</a><a href="#roadmap">What’s next</a></nav><a className="header-cta" href="mailto:hello@qr8.dev">Let’s build something <Icon name="arrow" size={16} /></a></div></header>
-    <main id="main"><section className="hero"><div className="hero-copy"><div className="hero-eyebrow"><span className="spark-mark">✳</span> A NEW WAY TO BUILD, TOGETHER</div><h1>Your vision.<br />Our agents.<br /><span>One shared office.</span></h1><p>A little less mystery. A lot more making.<br className="desktop-break" /> Step inside your project’s AI workspace and see<br className="desktop-break" /> good ideas become real things.</p><div className="hero-actions"><button className="primary-button" onClick={goOffice}>Step into the office <Icon name="arrow" size={17} /></button><a href="#how-it-works">Take a look around <Icon name="arrow" size={14} /></a></div><div className="hero-proof"><span className="mini-avatars">{[agents[0], agents[2], agents[4]].map(a => <Avatar key={a.id} agent={a} small />)}</span><span>Different minds. One clear direction.</span></div></div><div className="hero-aside"><span className="aside-orbit orbit-one" /><span className="aside-orbit orbit-two" /><div className="hero-note"><span className="note-pin" /><span className="eyebrow">OUR FIRST PROJECT?</span><h2>You’re looking<br />at it.</h2><p>We’re building QR8 in the open.<br />The office below is a first look<br />at where we’re headed.</p><span className="handwritten">Come on in. <span>↴</span></span><span className="note-number">001 / THE QR8 BUILD</span></div><span className="aside-caption"><span /> MADE BY PEOPLE. POWERED BY AGENTS.</span></div></section>
-    <section className="workspace-section" id="workspace" aria-labelledby="workspace-heading"><div className="section-intro"><div><span className="eyebrow">THE WORK, IN PLAIN SIGHT</span><h2 id="workspace-heading">Welcome to the office<span className="title-period">.</span></h2></div><span className="public-tag"><Icon name="globe" size={14} /> Public project · Open for a look</span></div>
-      <div className="workspace"><div className="project-bar"><div className="project-icon"><Icon name="grid" size={20} /></div><div className="project-title"><h3>Building QR8</h3><p>Our own platform. Our first shared workspace.</p></div><span className="project-version">PROJECT 001</span><span className="replay-label"><span /> DEMO REPLAY</span></div><div className="workspace-nav"><div role="tablist" aria-label="Project views">{tabs.map(([name, icon]) => <button key={name} id={`tab-${name}`} role="tab" aria-selected={tab === name} aria-controls={`panel-${name}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={e => { const i = tabs.findIndex(t => t[0] === name); const next = e.key === 'ArrowRight' ? (i + 1) % tabs.length : e.key === 'ArrowLeft' ? (i + tabs.length - 1) % tabs.length : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null; if (next !== null) { e.preventDefault(); setTab(tabs[next][0]); document.getElementById(`tab-${tabs[next][0]}`).focus(); } }}><Icon name={icon} size={16} />{name}{name === 'Tasks' && <span className="tab-count">{tasks.length}</span>}</button>)}</div><span className="team-count"><Icon name="people" size={14} /> 6 minds on the team</span></div>
-      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="workspace-content" tabIndex={0}>
-        {tab === 'Office' && <><div className="office-toolbar"><div><span className="office-heading">A bird’s-eye view</span><span className="toolbar-separator">/</span><span className="muted">Big ideas. Little desks.</span></div><div className="view-switch" aria-label="Office display"><button className={view === 'floor' ? 'selected' : ''} aria-pressed={view === 'floor'} onClick={() => setView('floor')}><Icon name="grid" size={14} />Office</button><button className={view === 'list' ? 'selected' : ''} aria-pressed={view === 'list'} onClick={() => setView('list')}><Icon name="people" size={14} />Team</button></div></div><Office state={state} select={open} view={view} /></>}
-        {tab === 'Tasks' && <div className="tasks-panel"><div className="panel-title"><h3>A plan becoming a product.</h3><span className="muted">{state.completed} of {tasks.length} complete in this replay</span></div>{tasks.map(task => <button className="task-row" key={task.id} onClick={() => open({ kind: 'task', id: task.id })}><span className="task-check"><Icon name={state.taskStates[task.id].status === 'Complete' ? 'check' : 'folder'} size={17} /></span><span className="task-row-content"><small>{task.id} · {task.category}</small><strong>{task.title}</strong></span><Status>{state.taskStates[task.id].status}</Status><Icon name="chevron" size={16} /></button>)}</div>}
-        {tab === 'Activity' && <div className="activity-panel"><div className="panel-title"><h3>Every small step, connected.</h3><span className="muted">Illustrative project timeline</span></div>{[...state.visible].reverse().map(e => <button className="activity-row" key={e.id} onClick={() => open({ kind: 'task', id: e.taskId })}><Avatar agent={agents.find(a => a.id === e.agentId)} small /><span><strong>{e.summary}</strong><p>{e.detail}</p><small>{e.taskId} · {e.time} in replay</small></span><Icon name="chevron" size={16} /></button>)}</div>}
-        {tab === 'Deliverables' && <div className="deliverables-panel"><div className="panel-title"><h3>Something you can look at.</h3><span className="muted">Demonstration notes, not live build artifacts</span></div><div className="artifact-grid">{tasks.filter(t => state.visible.some(e => e.taskId === t.id && e.evidence)).map(t => <button key={t.id} className="artifact-card" onClick={() => open({ kind: 'task', id: t.id })}><span className="artifact-visual"><Icon name={t.category === 'Engineering' ? 'code' : 'folder'} size={35} /><span>{t.artifactType}</span></span><small>{t.id}</small><h4>{t.artifact}</h4><span>Read demonstration note <Icon name="arrow" size={15} /></span></button>)}</div>{!state.visible.some(e => e.evidence) && <p className="empty-state">No deliverables at this point. Advance the replay to see the first handoff.</p>}</div>}
-        {tab === 'Support' && <Support />}
-      </div><div className="playback-bar"><div className="playback-controls"><button className="play-button" onClick={togglePlay} aria-label={playing ? 'Pause replay' : 'Play replay'}><Icon name={playing ? 'pause' : 'play'} size={14} /></button><button className="icon-button" aria-label="Restart replay" onClick={() => { setCursor(0); setPlaying(false); }}><Icon name="reset" size={15} /></button><button className="speed-button" onClick={() => setSpeed(s => s === 1 ? 2 : s === 2 ? 4 : 1)} aria-label={`Playback speed ${speed} times. Change speed`}>{speed}×</button><span className="playback-time">{state.visible.at(-1)?.time}</span></div><label className="timeline"><span className="sr-only">Replay position</span><input type="range" min="0" max={events.length - 1} value={cursor} onChange={e => { setCursor(Number(e.target.value)); setPlaying(false); }} style={{ '--progress': `${cursor / (events.length - 1) * 100}%` }} /></label><span className="playback-end">09:34</span><span className="playback-caption">{playing ? 'PLAYING REPLAY' : 'EXPLORE AT YOUR PACE'}</span></div><div className="demo-disclosure"><Icon name="info" size={13} /><span>This is an illustrative replay, not a live agent feed. Real project integrations are up next.</span></div></div>
-      <div className="under-office"><span><Icon name="lock" size={14} /> Your future project. Your own private office.</span><a href="#roadmap">See what we’re building next <Icon name="arrow" size={14} /></a></div>
-    </section>
-    <section className="how-section" id="how-it-works"><div className="section-intro"><div><span className="eyebrow">LESS GUESSWORK. MORE TOGETHER.</span><h2>A front-row seat to your project.</h2></div><p>You bring the idea. We bring the team.<br />Everyone stays in the loop.</p></div><div className="feature-grid">{[{ number: '01', icon: 'people', title: 'Meet your team.', text: 'A dedicated cast of specialists, working toward one shared goal. See who’s doing what and where the next handoff happens.' }, { number: '02', icon: 'activity', title: 'Follow the making.', text: 'From the first brief to the finishing touches. Open a task, explore a decision, and see the work behind the progress.' }, { number: '03', icon: 'ticket', title: 'Be part of the process.', text: 'Ask a question. Share feedback. Review a milestone. Your voice belongs in the room, not at the end of an email chain.' }].map(f => <article key={f.number}><span className="feature-number">{f.number} /</span><span className="feature-icon"><Icon name={f.icon} size={23} /></span><h3>{f.title}</h3><p>{f.text}</p></article>)}</div></section>
-    <section className="roadmap-section" id="roadmap"><div><span className="eyebrow">SMALL BEGINNINGS. BIG POSSIBILITIES.</span><h2>This is just<br />the first room.</h2><p>Today, a look inside the QR8 build.<br />Next, a workspace that’s entirely yours.</p><a className="primary-button" href="mailto:hello@qr8.dev?subject=QR8%20project%20enquiry">Build with QR8 <Icon name="arrow" size={16} /></a></div><ol className="roadmap"><li className="current"><span className="roadmap-point"><Icon name="check" size={13} /></span><div><span className="eyebrow">01 · YOU ARE HERE</span><h3>An office you can explore</h3><p>Meet the team, follow a replay, and see the vision.</p></div><span className="now-tag">First look</span></li><li><span className="roadmap-point">02</span><div><span className="eyebrow">UP NEXT</span><h3>Your own project space</h3><p>Secure access, real workstreams, and shared milestones.</p></div></li><li><span className="roadmap-point">03</span><div><span className="eyebrow">A LITTLE FURTHER OUT</span><h3>A whole world of teams</h3><p>More specialists. More projects. The same shared vision.</p></div></li></ol></section>
-    </main><footer className="site-footer"><Brand /><span>A little human. A little machine. A lot of possibility.</span><a href="mailto:hello@qr8.dev">Say hello <Icon name="arrow" size={14} /></a><small>© {new Date().getFullYear()} QR8</small></footer>{selection && <Inspector selection={selection} state={state} close={() => setSelection(null)} />}</>;
+function Empty({icon='folder',title,children,action}) { return <div className="workspace-empty"><span><Icon name={icon} size={28}/></span><h3>{title}</h3><p>{children}</p>{action}</div>; }
+export default function App(){
+  const [projects,setProjects]=useState([]),[projectId,setProjectId]=useState(''),[snapshot,setSnapshot]=useState(null),[tab,setTab]=useState('Office'),[view,setView]=useState(()=>matchMedia('(max-width:600px)').matches?'list':'floor'),[selection,setSelection]=useState(null),[create,setCreate]=useState(null),[error,setError]=useState(''),[loading,setLoading]=useState(true),[filter,setFilter]=useState('All'),[search,setSearch]=useState(''),[expandedTicket,setExpandedTicket]=useState(null),[lastSync,setLastSync]=useState(null),[syncError,setSyncError]=useState('');
+  const activeProject=useRef('');
+  const inFlight=useRef(false), readGeneration=useRef(0);
+  const refresh=useCallback(async(id,{signal}={})=>{
+    const generation=++readGeneration.current;
+    const data=await request(`/projects/${id}/snapshot`,{signal});
+    if(activeProject.current===id&&readGeneration.current===generation){setSnapshot(data);setLastSync(new Date());setSyncError('');}
+    return data;
+  },[]);
+  const loadProjects=useCallback(async()=>{
+    setLoading(true);setError('');
+    try{const data=await request('/projects');setProjects(data.projects);const wanted=new URLSearchParams(location.search).get('project');const id=data.projects.some(p=>p.id===wanted)?wanted:data.projects[0]?.id;setProjectId(id||'');if(!id)setLoading(false);}
+    catch(e){setError(e.message);setLoading(false);}
+  },[]);
+  useEffect(()=>{loadProjects();},[loadProjects]);
+  useEffect(()=>{
+    if(!projectId)return;
+    const controller=new AbortController();activeProject.current=projectId;setSnapshot(null);setLoading(true);setError('');setSelection(null);setCreate(null);setFilter('All');setSearch('');setExpandedTicket(null);
+    const url=new URL(location.href);url.searchParams.set('project',projectId);history.replaceState({},'',url);
+    refresh(projectId,{signal:controller.signal}).catch(e=>{if(e.name!=='AbortError')setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+    if(isStaticPreview)return()=>controller.abort();
+    const timer=setInterval(()=>{
+      if(document.hidden||inFlight.current)return;
+      inFlight.current=true;
+      refresh(projectId,{signal:controller.signal}).catch(e=>{if(e.name!=='AbortError'&&activeProject.current===projectId)setSyncError('Updates paused. Showing the last saved state. Retry to reconnect.');}).finally(()=>{inFlight.current=false;});
+    },5000);
+    return()=>{controller.abort();clearInterval(timer);};
+  },[projectId,refresh]);
+  async function mutate(path,body,method='POST'){
+    const id=projectId;
+    const result=await request(`/projects/${id}/${path}`,{method,body});
+    try{await refresh(id);}catch{setSyncError('Your change was saved, but the view could not refresh. Retry to load the latest state.');}
+    return result;
+  }
+  function openCreate(kind){if(!isStaticPreview)setCreate(kind);}
+  async function createRecord(values){
+    if(create==='project'){
+      const result=await request('/projects',{method:'POST',body:values});
+      setProjects(current=>[...current,result]);selectProject(result.id);setTab('Tasks');
+    }else{
+      const resource={task:'tasks',artifact:'artifacts',ticket:'tickets'}[create];
+      if(create==='task')values.agent_id=values.agent_id||null;
+      await mutate(resource,values);
+      setTab(create==='task'?'Tasks':create==='artifact'?'Deliverables':'Support');
+    }
+  }
+  const state=snapshot?projectState(snapshot):null;
+  const currentTask=selection?.kind==='task'?snapshot?.tasks.find(t=>t.id===selection.id):null;
+  const currentAgent=selection?.kind==='agent'?snapshot?.agents.find(a=>a.id===selection.id):null;
+  const currentArtifact=selection?.kind==='artifact'?snapshot?.artifacts.find(a=>a.id===selection.id):null;
+  const filteredTasks=snapshot?.tasks.filter(t=>(filter==='All'||t.status===filter)&&`${t.title} ${t.description}`.toLowerCase().includes(search.toLowerCase()))||[];
+  const active=snapshot?.tasks.filter(t=>['In progress','In review','Blocked'].includes(t.status)).length||0;
+  function selectProject(id){activeProject.current=id;setSnapshot(null);setLoading(true);setProjectId(id);}
+  function openTask(id){setSelection({kind:'task',id});}
+  async function retry(){setSyncError('');try{await refresh(projectId);setError('');}catch(e){if(snapshot)setSyncError(e.message);else setError(e.message);}}
+  return <div className="app-shell"><a className="skip-link" href="#project-main">Skip to workspace</a><aside className="app-sidebar"><Brand/><div className="sidebar-label">YOUR WORKSPACE <span>{isStaticPreview?'PREVIEW':'INTERNAL'}</span></div><label htmlFor="project-select" className="sr-only">Current project</label><select id="project-select" className="project-select" value={projectId} onChange={e=>selectProject(e.target.value)} disabled={!projects.length}>{projects.map(p=><option value={p.id} key={p.id}>{p.name}</option>)}{!projects.length&&<option>Loading projects…</option>}</select><button className="sidebar-new" onClick={()=>openCreate('project')} disabled={!!error||isStaticPreview} title={isStaticPreview?'Read-only review preview':undefined}><Icon name="plus" size={14}/>New project</button><nav aria-label="Project navigation">{tabs.map(([name,icon])=><button key={name} className={tab===name?'active':''} aria-label={name} aria-current={tab===name?'page':undefined} onClick={()=>{setTab(name);setSelection(null);}}><Icon name={icon} size={18}/><span>{name}</span>{name==='Tasks'&&snapshot&&<small>{snapshot.tasks.length}</small>}</button>)}</nav><div className="sidebar-bottom"><Icon name="lock" size={17}/><strong>{isStaticPreview?'Public review preview':'Local operator workspace'}</strong><p>{isStaticPreview?'Published project snapshot. Saving and live execution are not enabled.':'Project data is saved on the server. Customer access is not enabled.'}</p></div></aside>
+    <div className="app-body"><header className="app-topbar"><div className="breadcrumbs">Workspace <Icon name="chevron" size={12}/><strong>{snapshot?.project.name||'Projects'}</strong></div><div className="connection-status"><i className={error||syncError?'offline':''}/>{error?'Service unavailable':syncError?'Updates paused':loading?'Connecting…':isStaticPreview?'Read-only preview':'Database connected'}</div><span className="operator-avatar">Q</span></header><main id="project-main" className="app-main"><div className="app-page-heading"><div><span className="eyebrow">PROJECT WORKSPACE</span><h1>{snapshot?.project.name||'Your projects'}<span>.</span></h1><p>{snapshot?.project.description||'One place for your team, your tasks, and the work ahead.'}</p></div>{snapshot&&<button className="primary-button" disabled={isStaticPreview} title={isStaticPreview?'Read-only review preview':undefined} onClick={()=>openCreate('task')}><Icon name="plus" size={16}/>New task</button>}</div>
+    <div className="internal-banner"><Icon name="info" size={15}/><span>{isStaticPreview?'Public review preview · Explore the workspace, tasks, and notes. This is a published snapshot; saving changes and live agent execution are not available on this site.':'Internal workspace · Changes are saved. Agent assignments and statuses are managed manually until execution is connected.'}</span></div>
+    {syncError&&<div className="error-banner" role="alert"><span>{syncError}</span><button onClick={retry}>Retry</button></div>}
+    {error?<div className="backend-error" role="alert"><Icon name="activity" size={30}/><h2>Let’s reconnect your workspace.</h2><p>{error}</p><button className="primary-button" onClick={()=>projectId?retry():loadProjects()}>Retry connection</button><p className="muted">No changes are saved while the workspace service is unavailable.</p></div>:loading?<div className="app-loading" role="status">Opening your workspace…</div>:snapshot?<>
+    <div className="project-stats"><div><span>OPEN TASKS</span><strong>{snapshot.tasks.filter(t=>t.status!=='Complete').length}<small>to move forward</small></strong></div><div><span>IN PROGRESS</span><strong>{active}<small>assigned work</small></strong></div><div><span>COMPLETED</span><strong>{state.completed}<small>tasks wrapped up</small></strong></div><div><span>PROJECT NOTES</span><strong>{snapshot.artifacts.length}<small>ideas & decisions</small></strong></div></div>
+    <div className="app-panel"><div className="app-panel-heading"><div><Icon name={tabs.find(t=>t[0]===tab)[1]} size={18}/><h2>{tab==='Office'?'The project office':tab==='Deliverables'?'Deliverables & notes':tab==='Support'?'Project support':tab}</h2><span className="panel-project-badge">{tab==='Office'?`${snapshot.agents.length} specialists`: isStaticPreview?'SNAPSHOT':'SERVER SAVED'}</span></div>{tab==='Office'?<div className="view-switch"><button className={view==='floor'?'selected':''} aria-pressed={view==='floor'} onClick={()=>setView('floor')}><Icon name="grid" size={14}/>Office</button><button className={view==='list'?'selected':''} aria-pressed={view==='list'} onClick={()=>setView('list')}><Icon name="people" size={14}/>Team</button></div>:tab!=='Activity'&&<button className="secondary-button" disabled={isStaticPreview} title={isStaticPreview?'Read-only review preview':undefined} onClick={()=>openCreate(tab==='Tasks'?'task':tab==='Deliverables'?'artifact':'ticket')}><Icon name="plus" size={14}/>{tab==='Tasks'?'New task':tab==='Deliverables'?'Add note':'New ticket'}</button>}</div>
+    {tab==='Office'&&<><p className="panel-explanation">Your team’s current assignments. Select a specialist to inspect their work.</p><Office state={state} select={setSelection} view={view} agents={snapshot.agents} departments={snapshot.departments}/><div className="office-work-strip"><span><Icon name="check" size={15}/> {snapshot.tasks.filter(t=>t.status==='Queued').length} queued</span><span><Icon name="activity" size={15}/> {active} active</span><button onClick={()=>setTab('Tasks')}>Open task board <Icon name="arrow" size={14}/></button></div></>}
+    {tab==='Tasks'&&<div className="app-task-view"><div className="task-filters"><label><Icon name="folder" size={14}/><input aria-label="Search tasks" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Find a task…"/></label><select aria-label="Filter tasks by status" value={filter} onChange={e=>setFilter(e.target.value)}>{['All','Queued','In progress','In review','Blocked','Complete'].map(s=><option value={s} key={s}>{s==='All'?'All statuses':s}</option>)}</select></div>{filteredTasks.length?filteredTasks.map(t=><button className="task-row" key={t.id} onClick={()=>openTask(t.id)}><span className="task-check"><Icon name={t.status==='Complete'?'check':'folder'} size={17}/></span><span className="task-row-content"><small>{t.id.slice(0,8).toUpperCase()}</small><strong>{t.title}</strong><span>{snapshot.agents.find(a=>a.id===t.agent_id)?.name||'Unassigned'}</span></span><Status>{t.status}</Status><Icon name="chevron" size={15}/></button>):<Empty icon="check" title={snapshot.tasks.length?'No matching tasks':'Give the team its first task.'}>{snapshot.tasks.length?'Try a different search or status.':'Start with a clear goal. Assign a specialist and move the work forward.'}</Empty>}</div>}
+    {tab==='Activity'&&<div className="app-activity"><p className="panel-explanation">Recorded workspace changes, newest first. These are operator actions, not AI execution logs.</p>{[...snapshot.events].reverse().map(e=><div className="saved-event" key={e.id}><span className="event-icon"><Icon name={e.type.startsWith('task')?'check':e.type.startsWith('ticket')?'ticket':'folder'} size={16}/></span><div><strong>{e.summary}</strong><p>{e.detail}</p><small>LOCAL OPERATOR · {new Date(e.created_at).toLocaleString()}</small></div>{e.task_id&&<button className="icon-button" aria-label={`Open task for ${e.summary}`} onClick={()=>openTask(e.task_id)}><Icon name="chevron" size={15}/></button>}</div>)}</div>}
+    {tab==='Deliverables'&&<div className="app-deliverables"><p className="panel-explanation">Save briefs, decisions, and delivery notes. File uploads and automated build artifacts are not connected yet.</p>{snapshot.artifacts.length?<div className="artifact-grid">{snapshot.artifacts.map(a=><button className="artifact-card" key={a.id} onClick={()=>setSelection({kind:'artifact',id:a.id})}><span className="artifact-visual"><Icon name="folder" size={30}/><span>PROJECT NOTE</span></span><small>{new Date(a.created_at).toLocaleDateString()}</small><h4>{a.title}</h4><span>Read note <Icon name="arrow" size={14}/></span></button>)}</div>:<Empty title="A place for the thinking." action={<button className="secondary-button" disabled={isStaticPreview} title={isStaticPreview?'Read-only review preview':undefined} onClick={()=>openCreate('artifact')}>Add your first note <Icon name="plus" size={14}/></button>}>Keep a brief or decision alongside the work it belongs to.</Empty>}</div>}
+    {tab==='Support'&&<div className="app-support"><p className="panel-explanation">Tickets are saved for this project. External notifications, replies, and customer delivery will come in the collaboration phase.</p>{snapshot.tickets.length?snapshot.tickets.map(t=><div className="ticket" key={t.id}><button aria-expanded={expandedTicket===t.id} onClick={()=>setExpandedTicket(expandedTicket===t.id?null:t.id)}><span><small>{t.id.slice(0,8).toUpperCase()} · {new Date(t.created_at).toLocaleString()}</small><strong>{t.subject}</strong><Status>{t.status}</Status></span><Icon name="chevron" size={16}/></button>{expandedTicket===t.id&&<p>{t.description}</p>}</div>):<Empty icon="ticket" title="A direct line to the work." action={<button className="secondary-button" disabled={isStaticPreview} title={isStaticPreview?'Read-only review preview':undefined} onClick={()=>openCreate('ticket')}>Create a ticket <Icon name="plus" size={14}/></button>}>Record a question, issue, or request without losing the project context.</Empty>}</div>}
+    </div><footer className="app-statusbar"><span><i/>{isStaticPreview?'Published snapshot · Read only':'Changes saved to the workspace database'}</span><span>{lastSync?`${isStaticPreview?'Loaded':'Last synced'} ${lastSync.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`:''}<button onClick={retry} aria-label="Refresh project"><Icon name="reset" size={14}/></button></span></footer>
+    </>:null}</main></div>
+    {create&&<CreateDialog key={create} kind={create} agents={snapshot?.agents||[]} tasks={snapshot?.tasks||[]} close={()=>setCreate(null)} save={createRecord}/>}
+    {currentTask&&<TaskDetails readOnly={isStaticPreview} key={currentTask.id} task={currentTask} snapshot={snapshot} close={()=>setSelection(null)} save={(id,body)=>mutate(`tasks/${id}`,body,'PATCH')} openArtifact={id=>setSelection({kind:'artifact',id})}/>}
+    {currentAgent&&<AgentDetails key={currentAgent.id} agent={currentAgent} snapshot={snapshot} close={()=>setSelection(null)} openTask={openTask}/>}
+    {currentArtifact&&<ArtifactDetails key={currentArtifact.id} artifact={currentArtifact} snapshot={snapshot} close={()=>setSelection(null)} openTask={openTask}/>}
+  </div>;
 }
