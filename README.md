@@ -1,68 +1,51 @@
-# QR8 -- AI-Powered Web Development Agency
+# QR8 / Visual Agent Office
 
-Marketing site for QR8. React 18 + Vite 6, deployed to GitHub Pages.
+A visual AI delivery studio, starting with an interactive public demonstration of the QR8 build. React 18 + Vite 6; no additional runtime packages.
 
-## Quick Start
-
-```bash
-npm install
-npm run dev
-```
-
-Open `http://localhost:5173` in your browser.
-
-## Deploy
-
-### GitHub Pages (Automatic)
-
-Every push to `main` auto-deploys via GitHub Actions.
-
-1. In your repo: **Settings -> Pages -> Source -> GitHub Actions**
-2. Push to `main` -- site goes live at `https://YOUR_USERNAME.github.io/YOUR_REPO/`
-
-### Manual
+## Develop
 
 ```bash
-npm run build     # outputs to dist/
-npm run preview   # preview production build locally
+npm ci
+npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
 ```
 
-## Project Structure
+## Validate
 
-```
-src/
-  App.jsx                          # Composition root
-  main.jsx                         # React entry point
-  ThemeToggle.jsx                  # Light/dark mode toggle
-  BeforeAfterMockup.jsx            # Before/after website mockups
-  PortfolioPreview.jsx             # CSS-rendered mini-sites
-  components/
-    layout/   Nav.jsx, Footer.jsx
-    sections/ Hero, TrustStrip, ProblemSolution, Portfolio,
-              Testimonials, Process, Pricing, FAQ
-    modals/   ContactModal, LegalModal (lazy-loaded)
-    ui/       AuroraMesh, FadeIn, Counter, Stars, FAQItem
-  data/       navLinks, faqData, testimonials, projects,
-              processSteps, pricingTiers, techLogos
-  styles/
-    theme.css       # Design tokens (55+ CSS custom properties)
-    responsive.css  # Media queries (mobile/tablet/desktop)
-index.html          # HTML template with theme flash prevention
-vite.config.js      # Vite config (relative base path)
-.github/workflows/  # GitHub Actions deployment
+```bash
+node --test tests/office.test.js
+npm run build
 ```
 
-## Tech Stack
+For browser coverage, use an environment with Python Playwright and Chromium at `/usr/bin/chromium`. Start the development server above, then run:
 
-- **React 18** -- component library
-- **Vite 6** -- build tool
-- **CSS Custom Properties** -- theming (light/dark mode)
-- **Web3Forms** -- contact form submission
-- **GitHub Actions** -- CI/CD deployment
+```bash
+python scripts/browser-smoke.py
+```
 
-## Design System
+`QR8_TEST_URL` can point the same browser checks at a local production preview. Run `npm run preview -- --host 0.0.0.0 --port 4173 --strictPort`, then `QR8_TEST_URL=http://127.0.0.1:4173/ python scripts/browser-smoke.py`.
 
-- **Colors:** Slate/Blue system with light-default + dark mode toggle
-- **Font:** Inter (400/500/600/700)
-- **Breakpoints:** Mobile (<640px), Tablet (640-1024px), Desktop (>1024px)
-- **Accessibility:** WCAG 2.1 AA compliant
+## First-build scope
+
+- A new landing page, configurable office departments, and six inspectable agents.
+- An ordered replay fixture drives task ownership, statuses, activity, and demonstration deliverable notes.
+- Play/pause, speed, restart, and seek controls. These control visualization only.
+- Tasks, activity, deliverables, and a local support draft experience.
+- Responsive office/team views, keyboard tab navigation, native dialogs, and reduced motion.
+
+The replay is authored demonstration content, not captured historical telemetry or live development. Agent identities, timestamps, and deliverable notes are illustrative. Support drafts remain in local browser storage; they are not sent or monitored. No login, customer isolation, actual artifact delivery, or agent execution is implemented. Do not enter confidential information in the prototype.
+
+## Implementation plan
+
+See [the high-level implementation plan](docs/IMPLEMENTATION-PLAN.md) for secure project access, event ingestion, real agent/GitHub integration, customer support, and multi-team operations.
+
+Key files:
+
+- `src/App.jsx`: landing, project navigation, office, inspectors, local support.
+- `src/data/office.js`: demonstration data and pure event projection.
+- `src/styles/office.css`: responsive visual system.
+- `tests/office.test.js`: event projection and ownership checks.
+- `scripts/browser-smoke.py`: functional browser checks.
+
+## Deployment
+
+The existing GitHub Actions workflow builds and deploys `dist/` to GitHub Pages on a push to `main`. No deployment is performed by local builds. Future authenticated services and execution workers require separate backend hosting. Optional Google Fonts have local system fallbacks.

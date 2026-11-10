@@ -1,73 +1,110 @@
-import { useState, lazy, Suspense } from "react";
+import { useEffect, useRef, useState } from 'react';
+import { agents, departments, events, tasks, projectOffice } from './data/office';
 
-// Layout
-import Nav from "./components/layout/Nav.jsx";
-import Footer from "./components/layout/Footer.jsx";
+function Icon({ name, size = 18, ...props }) {
+  const paths = { grid: 'M3 3h7v7H3z M14 3h7v7h-7z M3 14h7v7H3z M14 14h7v7h-7z', arrow: 'M5 12h14m-5-5 5 5-5 5', play: 'm9 5 10 7-10 7Z', pause: 'M8 5v14M16 5v14', reset: 'M3 10a9 9 0 1 1 2 8M3 4v6h6', check: 'm5 12 4 4L19 6', activity: 'M3 12h4l3-7 4 14 3-7h4', folder: 'M3 7V5h6l2 2h10v13H3Z', ticket: 'M4 4h16v5a3 3 0 0 0 0 6v5H4v-5a3 3 0 0 0 0-6Zm8 0v3m0 3v4m0 3v3', globe: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM3 12h18M12 3a18 18 0 0 1 0 18 18 18 0 0 1 0-18Z', lock: 'M6 10h12v11H6ZM8 10V7a4 4 0 0 1 8 0v3', people: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M13 3a4 4 0 0 1 0 8M22 21v-2a4 4 0 0 0-3-4M13 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z', code: 'm8 7-5 5 5 5m8-10 5 5-5 5m-3-13-2 16', close: 'm6 6 12 12M6 18 18 6', plus: 'M12 5v14M5 12h14', chevron: 'm9 5 7 7-7 7', external: 'M14 3h7v7m0-7L10 14M10 3H3v18h18v-7', leaf: 'M20 4C8 2 3 8 6 15c7 4 14-1 14-11ZM5 20 15 10', info: 'M12 11v6m0-10v1M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z' };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}><path d={paths[name] || paths.grid} /></svg>;
+}
+function Brand() { return <a className="brand" href="#" aria-label="QR8 home"><span className="brand-symbol"><i /><i /><i /><i /></span>qr8<span className="brand-studio">/ studio</span></a>; }
+function Avatar({ agent, small = false }) { return <span className={`avatar ${agent.color} ${small ? 'small' : ''}`}><span className="avatar-eyes">··</span><span className="avatar-mouth" /></span>; }
+function Status({ children }) { return <span className={`status ${children.toLowerCase().replaceAll(' ', '-')}`}><i />{children}</span>; }
 
-// UI
-import AuroraMesh from "./components/ui/AuroraMesh.jsx";
-
-// Sections
-import Hero from "./components/sections/Hero.jsx";
-import TrustStrip from "./components/sections/TrustStrip.jsx";
-import ProblemSolution from "./components/sections/ProblemSolution.jsx";
-import Portfolio from "./components/sections/Portfolio.jsx";
-import Testimonials from "./components/sections/Testimonials.jsx";
-import Process from "./components/sections/Process.jsx";
-import Pricing from "./components/sections/Pricing.jsx";
-import FAQ from "./components/sections/FAQ.jsx";
-
-// Modals (lazy-loaded -- not needed until user clicks)
-const LegalModal = lazy(() => import("./components/modals/LegalModal.jsx"));
-const ContactModal = lazy(() => import("./components/modals/ContactModal.jsx"));
-
-export default function QR8Page() {
-  const [showLegal, setShowLegal] = useState(null);
-  const [showContact, setShowContact] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState("");
-
-  const scrollTo = (id) => {
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
-  const openContact = (pkg) => {
-    setSelectedPackage(pkg || "");
-    setShowContact(true);
-  };
-
-  return (
-    <div style={{
-      fontFamily: "var(--font-family)",
-      background: "var(--color-bg)", position: "relative",
-      overflow: "hidden", color: "var(--color-text-primary)",
-      transition: "background 0.3s ease, color 0.3s ease",
-    }}>
-      <a href="#main-content" className="skip-to-content">Skip to content</a>
-      <AuroraMesh />
-      <Nav onContact={() => openContact()} />
-      <main id="main-content">
-        <Hero onContact={() => openContact()} onScrollTo={scrollTo} />
-        <TrustStrip />
-        <ProblemSolution />
-        <Portfolio />
-        <Testimonials />
-        <Process />
-        <Pricing onSelectPackage={(id) => openContact(id)} />
-        <FAQ />
-      </main>
-      <Footer onContact={() => openContact()} onLegal={setShowLegal} />
-
-      <Suspense fallback={null}>
-        {showLegal && <LegalModal type={showLegal} onClose={() => setShowLegal(null)} />}
-        {showContact && (
-          <ContactModal
-            selectedPackage={selectedPackage}
-            onPackageChange={setSelectedPackage}
-            onClose={() => setShowContact(false)}
-          />
-        )}
-      </Suspense>
+function Inspector({ selection, state, close }) {
+  const dialog = useRef(null);
+  const previousFocus = useRef(document.activeElement);
+  useEffect(() => {
+    const element = dialog.current;
+    element.showModal();
+    return () => { element.close(); if (previousFocus.current?.isConnected) previousFocus.current.focus(); };
+  }, []);
+  const isAgent = selection.kind === 'agent';
+  const agent = agents.find(a => a.id === selection.id);
+  const task = tasks.find(t => t.id === (isAgent ? state.agentStates[agent.id].taskId : selection.id));
+  const status = isAgent ? state.agentStates[agent.id].status : state.taskStates[task.id].status;
+  const history = state.visible.filter(e => isAgent ? e.agentId === agent.id : e.taskId === task.id);
+  const evidence = task && state.visible.some(e => e.taskId === task.id && e.evidence);
+  return <dialog ref={dialog} className="inspector" onCancel={close} onClick={e => { if (e.target === dialog.current) close(); }} aria-labelledby="inspector-title">
+    <div className="inspector-body"><div className="inspector-top"><span className="eyebrow">{isAgent ? 'MEET YOUR TEAM' : 'TASK DETAILS'}</span><button className="icon-button" onClick={close} aria-label="Close details"><Icon name="close" /></button></div>
+      {isAgent && <Avatar agent={agent} />}<h2 id="inspector-title">{isAgent ? agent.name : task.title}</h2><p className="inspector-sub">{isAgent ? agent.role : task.id}</p><Status>{status}</Status>
+      <p className="inspector-description">{isAgent ? agent.description : task.description}</p>
+      {isAgent && <div className="detail-callout"><span className="eyebrow">CURRENT ASSIGNMENT</span><strong>{task ? task.title : 'Ready for the next handoff'}</strong><p>{task ? task.id : 'No active assignment at this point in the replay.'}</p></div>}
+      {task && <><h3>Acceptance criteria</h3><ul className="criteria">{task.criteria.map(c => <li key={c}><Icon name="check" size={15} />{c}</li>)}</ul></>}
+      {evidence && <div className="artifact-note"><span className="eyebrow">{task.artifactType} · DEMONSTRATION</span><h3>{task.artifact}</h3><p>{task.artifactText}</p></div>}
+      <h3>Activity in this replay</h3>{history.length ? <div className="detail-history">{history.map(e => <div key={e.id}><time>{e.time}</time><p>{e.summary}</p></div>)}</div> : <p className="muted">No activity yet. Advance the replay to follow this agent.</p>}
+      <p className="demo-footnote">Illustrative replay. Agent identities, timestamps, and deliverables demonstrate the planned workflow.</p>
     </div>
-  );
+  </dialog>;
+}
+
+function Office({ state, select, view }) {
+  const latest = state.visible.at(-1);
+  const review = latest?.type === 'review';
+  const participants = review ? [...new Set([latest.agentId, ...state.visible.filter(e => e.taskId === latest.taskId && e.agentId !== latest.agentId).slice(-1).map(e => e.agentId)])].map(id => agents.find(a => a.id === id)) : [];
+  return <div className={`office-floor ${view === 'list' ? 'list-mode' : ''}`}>
+    <div className="floor-top"><span><i className="floor-dot" /> QR8 HEADQUARTERS</span><span>FLOOR 01 <span className="floor-divider">/</span> THE BUILD TEAM</span></div>
+    <div className="departments">{departments.map((dept, index) => <section key={dept.id} className={`department ${dept.color}`} aria-label={dept.name}><header><span className="room-number">0{index + 1}</span><div><span className="room-kicker">{dept.subtitle}</span><h3>{dept.name}</h3></div><span className="room-count">02</span></header><div className="desk-row">{agents.filter(a => a.department === dept.id).map(agent => {
+      const current = state.agentStates[agent.id];
+      return <button key={agent.id} className={`agent-station ${current.status !== 'Available' ? 'station-active' : ''}`} onClick={() => select({ kind: 'agent', id: agent.id })} aria-label={`Inspect ${agent.name}, ${agent.role}, ${current.status}`}><div className="desk"><span className="monitor"><span className="code-line" /><span className="code-line" /><span className="code-line" /><span className="code-line" /></span><span className="keyboard" /><span className="desk-cup" /></div><div className="agent-seat"><Avatar agent={agent} /><span className="chair" /></div><span className="agent-name">{agent.name}<span className={`agent-dot ${current.status === 'Available' ? 'idle' : ''}`} /></span><span className="agent-role">{agent.role}</span><span className="agent-current">{current.taskId ? `${current.status} · ${current.taskId}` : 'Available'}</span><span className="list-status"><Status>{current.status}</Status></span></button>;
+    })}</div><div className="room-door" /></section>)}</div>
+    <div className="office-corridor"><span className="corridor-line" /><span className="corridor-caption"><Icon name="people" size={13} /> GOOD WORK HAPPENS TOGETHER</span><span className="corridor-line" /></div>
+    <div className="shared-rooms"><div className="lounge"><span className="room-label"><Icon name="leaf" size={14} /> THE RECHARGE CORNER</span><div className="lounge-scene"><span className="plant"><i /><i /><i /><b /></span><span className="sofa"><i /><i /></span><span className="coffee-table"><i /></span><span className="rug" /></div><span className="lounge-note">A little room to think.</span></div>
+      <div className={`meeting-room ${review ? 'meeting-active' : ''}`}><div className="meeting-heading"><span className="room-label"><Icon name="people" size={14} /> THE ROUND TABLE</span><span className="meeting-badge">{review ? 'DESIGN REVIEW' : 'OPEN FOR IDEAS'}</span></div><div className="meeting-scene"><span className="meeting-chair c1" /><span className="meeting-chair c2" /><span className="meeting-chair c3" /><span className="meeting-chair c4" /><span className="meeting-table"><span className="table-book" /><span className="table-cup" /><span className="table-paper" /></span>{participants.map((agent, i) => <span key={agent.id} className={`meeting-person mp${i + 1}`}><Avatar agent={agent} small /></span>)}</div><p>{review ? 'A fresh perspective. A better next step.' : 'Where handoffs become shared understanding.'}</p></div>
+      <div className="project-wall"><span className="room-label"><Icon name="folder" size={14} /> ON THE WALL</span><div className="wall-notes"><span className="sticky-note">Build in<br /><strong>the open.</strong><i>↗</i></span><span className="wall-paper"><span /><span /><span /><b>QR8 / V.01</b></span></div><span className="wall-caption">Small steps. Real progress.</span></div>
+    </div><div className="floor-bottom"><span><i /> {agents.filter(a => state.agentStates[a.id].status !== 'Available').length} agents on assignment</span><span>SELECT AN AGENT TO TAKE A CLOSER LOOK <Icon name="arrow" size={13} /></span></div>
+  </div>;
+}
+
+const initialTickets = [{ id: 'DEMO-001', subject: 'Can we see a mobile version of the office?', description: 'A list-first mobile view would make it easier to follow progress on the go.', status: 'In review' }];
+function Support() {
+  const [tickets, setTickets] = useState(() => { try { const stored = JSON.parse(localStorage.getItem('qr8-demo-tickets')); return Array.isArray(stored) && stored.every(t => typeof t.id === 'string' && typeof t.subject === 'string' && typeof t.description === 'string' && typeof t.status === 'string') ? stored : initialTickets; } catch { return initialTickets; } });
+  const [notice, setNotice] = useState('');
+  const [expanded, setExpanded] = useState(null);
+  function submit(e) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const subject = form.elements.subject.value.trim();
+    const description = form.elements.description.value.trim();
+    if (!subject || !description) { setNotice('Please add a subject and a message.'); return; }
+    const updated = [{ id: `LOCAL-${Date.now().toString(36).toUpperCase()}`, subject, description, status: 'Local draft' }, ...tickets];
+    setTickets(updated);
+    try { localStorage.setItem('qr8-demo-tickets', JSON.stringify(updated)); setNotice('Draft saved in this browser. Nothing was sent to QR8.'); } catch { setNotice('Draft added for this session. Browser storage is unavailable; nothing was sent.'); }
+    form.reset();
+  }
+  return <div className="support-layout"><div><span className="eyebrow">A DIRECT LINE TO THE TEAM</span><h3>Good projects start with a conversation.</h3><p className="muted">Try the support experience. These demonstration tickets stay in your browser and are not monitored. Don’t enter confidential information.</p><form className="support-form" onSubmit={submit}><label htmlFor="subject">Subject</label><input id="subject" name="subject" required maxLength={120} placeholder="What would you like to discuss?" /><label htmlFor="description">Your message</label><textarea id="description" name="description" required maxLength={2000} rows={4} placeholder="Share an idea, a question, or a little feedback…" /><button className="primary-button" type="submit">Save local draft <Icon name="arrow" size={15} /></button><p role="status" className="form-notice">{notice}</p></form></div><div className="ticket-list"><h3>Demonstration tickets <span>{tickets.length}</span></h3>{tickets.map(t => <div className="ticket" key={t.id}><button onClick={() => setExpanded(expanded === t.id ? null : t.id)} aria-expanded={expanded === t.id}><span><small>{t.id}</small><strong>{t.subject}</strong><Status>{t.status}</Status></span><Icon name="chevron" /></button>{expanded === t.id && <p>{t.description}</p>}</div>)}</div></div>;
+}
+
+export default function App() {
+  const [tab, setTab] = useState('Office');
+  const [view, setView] = useState(() => window.matchMedia('(max-width: 600px)').matches ? 'list' : 'floor');
+  const [cursor, setCursor] = useState(6);
+  const [playing, setPlaying] = useState(false);
+  const [speed, setSpeed] = useState(1);
+  const [selection, setSelection] = useState(null);
+  const state = projectOffice(events, cursor);
+  useEffect(() => {
+    if (!playing) return;
+    if (cursor >= events.length - 1) { setPlaying(false); return; }
+    const timer = setTimeout(() => setCursor(c => Math.min(events.length - 1, c + 1)), 2600 / speed);
+    return () => clearTimeout(timer);
+  }, [playing, speed, cursor]);
+  function open(selection) { setPlaying(false); setSelection(selection); }
+  function togglePlay() { if (!playing && cursor === events.length - 1) setCursor(0); setPlaying(!playing); }
+  function goOffice() { setTab('Office'); document.getElementById('workspace').scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
+  const tabs = [['Office', 'grid'], ['Tasks', 'check'], ['Activity', 'activity'], ['Deliverables', 'folder'], ['Support', 'ticket']];
+  return <><a className="skip-link" href="#main">Skip to content</a><header className="site-header"><div className="header-inner"><Brand /><nav aria-label="Main navigation"><a className="nav-current" href="#workspace" onClick={() => setTab('Office')}>The office</a><a href="#how-it-works">How it works</a><a href="#roadmap">What’s next</a></nav><a className="header-cta" href="mailto:hello@qr8.dev">Let’s build something <Icon name="arrow" size={16} /></a></div></header>
+    <main id="main"><section className="hero"><div className="hero-copy"><div className="hero-eyebrow"><span className="spark-mark">✳</span> A NEW WAY TO BUILD, TOGETHER</div><h1>Your vision.<br />Our agents.<br /><span>One shared office.</span></h1><p>A little less mystery. A lot more making.<br className="desktop-break" /> Step inside your project’s AI workspace and see<br className="desktop-break" /> good ideas become real things.</p><div className="hero-actions"><button className="primary-button" onClick={goOffice}>Step into the office <Icon name="arrow" size={17} /></button><a href="#how-it-works">Take a look around <Icon name="arrow" size={14} /></a></div><div className="hero-proof"><span className="mini-avatars">{[agents[0], agents[2], agents[4]].map(a => <Avatar key={a.id} agent={a} small />)}</span><span>Different minds. One clear direction.</span></div></div><div className="hero-aside"><span className="aside-orbit orbit-one" /><span className="aside-orbit orbit-two" /><div className="hero-note"><span className="note-pin" /><span className="eyebrow">OUR FIRST PROJECT?</span><h2>You’re looking<br />at it.</h2><p>We’re building QR8 in the open.<br />The office below is a first look<br />at where we’re headed.</p><span className="handwritten">Come on in. <span>↴</span></span><span className="note-number">001 / THE QR8 BUILD</span></div><span className="aside-caption"><span /> MADE BY PEOPLE. POWERED BY AGENTS.</span></div></section>
+    <section className="workspace-section" id="workspace" aria-labelledby="workspace-heading"><div className="section-intro"><div><span className="eyebrow">THE WORK, IN PLAIN SIGHT</span><h2 id="workspace-heading">Welcome to the office<span className="title-period">.</span></h2></div><span className="public-tag"><Icon name="globe" size={14} /> Public project · Open for a look</span></div>
+      <div className="workspace"><div className="project-bar"><div className="project-icon"><Icon name="grid" size={20} /></div><div className="project-title"><h3>Building QR8</h3><p>Our own platform. Our first shared workspace.</p></div><span className="project-version">PROJECT 001</span><span className="replay-label"><span /> DEMO REPLAY</span></div><div className="workspace-nav"><div role="tablist" aria-label="Project views">{tabs.map(([name, icon]) => <button key={name} id={`tab-${name}`} role="tab" aria-selected={tab === name} aria-controls={`panel-${name}`} tabIndex={tab === name ? 0 : -1} onClick={() => setTab(name)} onKeyDown={e => { const i = tabs.findIndex(t => t[0] === name); const next = e.key === 'ArrowRight' ? (i + 1) % tabs.length : e.key === 'ArrowLeft' ? (i + tabs.length - 1) % tabs.length : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null; if (next !== null) { e.preventDefault(); setTab(tabs[next][0]); document.getElementById(`tab-${tabs[next][0]}`).focus(); } }}><Icon name={icon} size={16} />{name}{name === 'Tasks' && <span className="tab-count">{tasks.length}</span>}</button>)}</div><span className="team-count"><Icon name="people" size={14} /> 6 minds on the team</span></div>
+      <div id={`panel-${tab}`} role="tabpanel" aria-labelledby={`tab-${tab}`} className="workspace-content" tabIndex={0}>
+        {tab === 'Office' && <><div className="office-toolbar"><div><span className="office-heading">A bird’s-eye view</span><span className="toolbar-separator">/</span><span className="muted">Big ideas. Little desks.</span></div><div className="view-switch" aria-label="Office display"><button className={view === 'floor' ? 'selected' : ''} aria-pressed={view === 'floor'} onClick={() => setView('floor')}><Icon name="grid" size={14} />Office</button><button className={view === 'list' ? 'selected' : ''} aria-pressed={view === 'list'} onClick={() => setView('list')}><Icon name="people" size={14} />Team</button></div></div><Office state={state} select={open} view={view} /></>}
+        {tab === 'Tasks' && <div className="tasks-panel"><div className="panel-title"><h3>A plan becoming a product.</h3><span className="muted">{state.completed} of {tasks.length} complete in this replay</span></div>{tasks.map(task => <button className="task-row" key={task.id} onClick={() => open({ kind: 'task', id: task.id })}><span className="task-check"><Icon name={state.taskStates[task.id].status === 'Complete' ? 'check' : 'folder'} size={17} /></span><span className="task-row-content"><small>{task.id} · {task.category}</small><strong>{task.title}</strong></span><Status>{state.taskStates[task.id].status}</Status><Icon name="chevron" size={16} /></button>)}</div>}
+        {tab === 'Activity' && <div className="activity-panel"><div className="panel-title"><h3>Every small step, connected.</h3><span className="muted">Illustrative project timeline</span></div>{[...state.visible].reverse().map(e => <button className="activity-row" key={e.id} onClick={() => open({ kind: 'task', id: e.taskId })}><Avatar agent={agents.find(a => a.id === e.agentId)} small /><span><strong>{e.summary}</strong><p>{e.detail}</p><small>{e.taskId} · {e.time} in replay</small></span><Icon name="chevron" size={16} /></button>)}</div>}
+        {tab === 'Deliverables' && <div className="deliverables-panel"><div className="panel-title"><h3>Something you can look at.</h3><span className="muted">Demonstration notes, not live build artifacts</span></div><div className="artifact-grid">{tasks.filter(t => state.visible.some(e => e.taskId === t.id && e.evidence)).map(t => <button key={t.id} className="artifact-card" onClick={() => open({ kind: 'task', id: t.id })}><span className="artifact-visual"><Icon name={t.category === 'Engineering' ? 'code' : 'folder'} size={35} /><span>{t.artifactType}</span></span><small>{t.id}</small><h4>{t.artifact}</h4><span>Read demonstration note <Icon name="arrow" size={15} /></span></button>)}</div>{!state.visible.some(e => e.evidence) && <p className="empty-state">No deliverables at this point. Advance the replay to see the first handoff.</p>}</div>}
+        {tab === 'Support' && <Support />}
+      </div><div className="playback-bar"><div className="playback-controls"><button className="play-button" onClick={togglePlay} aria-label={playing ? 'Pause replay' : 'Play replay'}><Icon name={playing ? 'pause' : 'play'} size={14} /></button><button className="icon-button" aria-label="Restart replay" onClick={() => { setCursor(0); setPlaying(false); }}><Icon name="reset" size={15} /></button><button className="speed-button" onClick={() => setSpeed(s => s === 1 ? 2 : s === 2 ? 4 : 1)} aria-label={`Playback speed ${speed} times. Change speed`}>{speed}×</button><span className="playback-time">{state.visible.at(-1)?.time}</span></div><label className="timeline"><span className="sr-only">Replay position</span><input type="range" min="0" max={events.length - 1} value={cursor} onChange={e => { setCursor(Number(e.target.value)); setPlaying(false); }} style={{ '--progress': `${cursor / (events.length - 1) * 100}%` }} /></label><span className="playback-end">09:34</span><span className="playback-caption">{playing ? 'PLAYING REPLAY' : 'EXPLORE AT YOUR PACE'}</span></div><div className="demo-disclosure"><Icon name="info" size={13} /><span>This is an illustrative replay, not a live agent feed. Real project integrations are up next.</span></div></div>
+      <div className="under-office"><span><Icon name="lock" size={14} /> Your future project. Your own private office.</span><a href="#roadmap">See what we’re building next <Icon name="arrow" size={14} /></a></div>
+    </section>
+    <section className="how-section" id="how-it-works"><div className="section-intro"><div><span className="eyebrow">LESS GUESSWORK. MORE TOGETHER.</span><h2>A front-row seat to your project.</h2></div><p>You bring the idea. We bring the team.<br />Everyone stays in the loop.</p></div><div className="feature-grid">{[{ number: '01', icon: 'people', title: 'Meet your team.', text: 'A dedicated cast of specialists, working toward one shared goal. See who’s doing what and where the next handoff happens.' }, { number: '02', icon: 'activity', title: 'Follow the making.', text: 'From the first brief to the finishing touches. Open a task, explore a decision, and see the work behind the progress.' }, { number: '03', icon: 'ticket', title: 'Be part of the process.', text: 'Ask a question. Share feedback. Review a milestone. Your voice belongs in the room, not at the end of an email chain.' }].map(f => <article key={f.number}><span className="feature-number">{f.number} /</span><span className="feature-icon"><Icon name={f.icon} size={23} /></span><h3>{f.title}</h3><p>{f.text}</p></article>)}</div></section>
+    <section className="roadmap-section" id="roadmap"><div><span className="eyebrow">SMALL BEGINNINGS. BIG POSSIBILITIES.</span><h2>This is just<br />the first room.</h2><p>Today, a look inside the QR8 build.<br />Next, a workspace that’s entirely yours.</p><a className="primary-button" href="mailto:hello@qr8.dev?subject=QR8%20project%20enquiry">Build with QR8 <Icon name="arrow" size={16} /></a></div><ol className="roadmap"><li className="current"><span className="roadmap-point"><Icon name="check" size={13} /></span><div><span className="eyebrow">01 · YOU ARE HERE</span><h3>An office you can explore</h3><p>Meet the team, follow a replay, and see the vision.</p></div><span className="now-tag">First look</span></li><li><span className="roadmap-point">02</span><div><span className="eyebrow">UP NEXT</span><h3>Your own project space</h3><p>Secure access, real workstreams, and shared milestones.</p></div></li><li><span className="roadmap-point">03</span><div><span className="eyebrow">A LITTLE FURTHER OUT</span><h3>A whole world of teams</h3><p>More specialists. More projects. The same shared vision.</p></div></li></ol></section>
+    </main><footer className="site-footer"><Brand /><span>A little human. A little machine. A lot of possibility.</span><a href="mailto:hello@qr8.dev">Say hello <Icon name="arrow" size={14} /></a><small>© {new Date().getFullYear()} QR8</small></footer>{selection && <Inspector selection={selection} state={state} close={() => setSelection(null)} />}</>;
 }
